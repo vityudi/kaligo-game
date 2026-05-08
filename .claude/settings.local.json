@@ -16,7 +16,11 @@
       "mcp__ai-game-developer__assets-refresh",
       "mcp__ai-game-developer__gameobject-find",
       "mcp__ai-game-developer__gameobject-component-add",
-      "mcp__ai-game-developer__gameobject-component-modify"
+      "mcp__ai-game-developer__gameobject-component-modify",
+      "Bash(Get-ChildItem -Path \"C:\\\\dev\\\\kaligo-game\\\\Assets\\\\Scripts\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('structured','NO STRUCTURED'\\), indent=2\\)\\)\")",
+      "Bash(python -c ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,
