@@ -346,8 +346,8 @@ Resources worth bookmarking now and revisiting at the right phase:
 
 ### Act I — Single-Player Action RPG
 
-- [ ] Phase 0 — Foundations
-- [ ] Phase 1 — Third-Person Character Controller
+- [x] Phase 0 — Foundations
+- [x] Phase 1 — Third-Person Character Controller
 - [ ] Phase 2 — A World to Walk In
 - [ ] Phase 3 — Combat Foundations
 - [ ] Phase 4 — Combat Depth (Skill Bar)
