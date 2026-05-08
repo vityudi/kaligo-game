@@ -30,11 +30,11 @@ namespace Kaligo
         // ─── Tuning ───────────────────────────────────────────────────────────
 
         [Header("Movement")]
-        [Tooltip("Speed (m/s) when walking. Matches the 'walk' threshold in the blend tree.")]
-        [SerializeField] private float walkSpeed = 2f;
+        [Tooltip("Speed (m/s) when walking.")]
+        [SerializeField] private float walkSpeed = 7f;
 
-        [Tooltip("Speed (m/s) when sprinting (Left Shift). Matches the 'run' threshold in the blend tree.")]
-        [SerializeField] private float runSpeed = 6f;
+        [Tooltip("Speed (m/s) when sprinting (Left Shift).")]
+        [SerializeField] private float runSpeed = 12f;
 
         [Tooltip("How fast horizontal velocity changes (m/s²). Higher = snappier; lower = floatier.")]
         [SerializeField] private float acceleration = 20f;
@@ -46,10 +46,6 @@ namespace Kaligo
         [Tooltip("Downward acceleration applied each frame (m/s²). -9.81 is realistic; -20 feels better for action games.")]
         [SerializeField] private float gravity = -20f;
 
-        [Header("Animator")]
-        [Tooltip("Smoothing time (seconds) for the Speed parameter. Avoids snapping between idle/walk/run.")]
-        [SerializeField] private float animSpeedDampTime = 0.1f;
-
         // ─── Internals ────────────────────────────────────────────────────────
 
         private CharacterController controller;
@@ -58,8 +54,6 @@ namespace Kaligo
 
         private Vector3 horizontalVelocity;   // current planar velocity in m/s
         private float verticalVelocity;       // current vertical velocity in m/s (gravity)
-        private float currentAnimSpeed;       // smoothed value written to Animator
-        private float animSpeedDampVelocity;  // ref param for Mathf.SmoothDamp
 
         private static readonly int SpeedHash = Animator.StringToHash("Speed");
 
@@ -83,8 +77,8 @@ namespace Kaligo
         private void Update()
         {
             Vector2 input = ReadMoveInput();
-            bool sprinting = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
-            float targetSpeed = (sprinting ? runSpeed : walkSpeed) * input.magnitude;
+            bool walking = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+            float targetSpeed = (walking ? walkSpeed : runSpeed) * input.magnitude;
 
             Vector3 moveDir = CameraRelativeDirection(input);
             Vector3 desiredHorizontalVelocity = moveDir * targetSpeed;
@@ -121,15 +115,10 @@ namespace Kaligo
                 );
             }
 
-            // Feed animator: smoothed magnitude of horizontal velocity
-            float animTarget = horizontalVelocity.magnitude;
-            currentAnimSpeed = Mathf.SmoothDamp(
-                currentAnimSpeed,
-                animTarget,
-                ref animSpeedDampVelocity,
-                animSpeedDampTime
-            );
-            animator.SetFloat(SpeedHash, currentAnimSpeed);
+            float animSpeed = input.magnitude < 0.01f ? 0f
+                           : walking ? 0.5f
+                           : 1.0f;
+            animator.SetFloat(SpeedHash, animSpeed);
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────

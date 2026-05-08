@@ -348,7 +348,7 @@ Resources worth bookmarking now and revisiting at the right phase:
 
 - [x] Phase 0 — Foundations
 - [x] Phase 1 — Third-Person Character Controller
-- [ ] Phase 2 — A World to Walk In
+- [x] Phase 2 — A World to Walk In
 - [ ] Phase 3 — Combat Foundations
 - [ ] Phase 4 — Combat Depth (Skill Bar)
 - [ ] Phase 5 — Progression
