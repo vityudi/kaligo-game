@@ -349,8 +349,14 @@ Resources worth bookmarking now and revisiting at the right phase:
 - [x] Phase 0 — Foundations
 - [x] Phase 1 — Third-Person Character Controller
 - [x] Phase 2 — A World to Walk In
-- [ ] Phase 3 — Combat Foundations
-- [ ] Phase 4 — Combat Depth (Skill Bar)
+- [ ] **Phase 3 — Combat Foundations** ← in progress
+    - [x] 3A — Skill system core (SkillData / SkillBar / SkillExecutor), HitboxController, HealthSystem, 3-hit combo + heavy attack
+    - [x] 3B — Block (hold, 80% DR), Jump, Dodge (i-frames), StaminaSystem, custom key-mapping API, animation cancel lock, movement multiplier during skills, camera-facing attack snap, 2D locomotion blend tree (9 clips)
+    - [x] 3C — EnemyAI state machine (Idle → Chase → Attack → Dead), EnemyAnimator, world-space health bar
+    - [ ] 3D — Player HUD (HP bar + stamina bar)
+    - [ ] 3E — Lock-on targeting (Tab toggle, second Cinemachine vcam, strafe-relative movement)
+    - [ ] 3F — Game-feel pass (hit-stop, Cinemachine Impulse shake, hit particles + SFX, knockback)
+- [ ] Phase 4 — Combat Depth (Skill Bar UI + active abilities) — *note: SkillData ScriptableObject system already built in Phase 3; Phase 4 adds cooldown UI, mana, and additional skill types*
 - [ ] Phase 5 — Progression
 - [ ] Phase 6 — Inventory & Equipment
 - [ ] Phase 7 — NPCs, Dialogue, Quest
