@@ -11,7 +11,12 @@
       "mcp__ai-game-developer__gameobject-create",
       "mcp__ai-game-developer__console-get-logs",
       "mcp__ai-game-developer__scene-save",
-      "Bash(npx unity-mcp-cli *)"
+      "Bash(npx unity-mcp-cli *)",
+      "mcp__ai-game-developer__animator-modify",
+      "mcp__ai-game-developer__assets-refresh",
+      "mcp__ai-game-developer__gameobject-find",
+      "mcp__ai-game-developer__gameobject-component-add",
+      "mcp__ai-game-developer__gameobject-component-modify"
     ]
   },
   "enableAllProjectMcpServers": true,

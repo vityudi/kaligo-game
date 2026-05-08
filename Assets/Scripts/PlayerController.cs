@@ -52,18 +52,27 @@ namespace Kaligo
         private Animator animator;
         private Camera mainCamera;
 
-        private Vector3 horizontalVelocity;   // current planar velocity in m/s
-        private float verticalVelocity;       // current vertical velocity in m/s (gravity)
+        private Vector3 horizontalVelocity;
+        private float   verticalVelocity;
 
-        private static readonly int SpeedHash = Animator.StringToHash("Speed");
+        public bool    IsGrounded          => controller.isGrounded;
+        public Vector3 CurrentMoveDirection => horizontalVelocity.sqrMagnitude > 0.01f
+                                                ? horizontalVelocity.normalized
+                                                : transform.forward;
+
+        private static readonly int VelocityXHash = Animator.StringToHash("VelocityX");
+        private static readonly int VelocityZHash = Animator.StringToHash("VelocityZ");
+
+        private Kaligo.Skills.SkillExecutor skillExecutor;
 
         // ─── Lifecycle ────────────────────────────────────────────────────────
 
         private void Awake()
         {
-            controller = GetComponent<CharacterController>();
-            animator = GetComponent<Animator>();
-            mainCamera = Camera.main;
+            controller     = GetComponent<CharacterController>();
+            animator       = GetComponent<Animator>();
+            mainCamera     = Camera.main;
+            skillExecutor  = GetComponent<Kaligo.Skills.SkillExecutor>();
 
             if (mainCamera == null)
             {
@@ -76,36 +85,31 @@ namespace Kaligo
 
         private void Update()
         {
-            Vector2 input = ReadMoveInput();
-            bool walking = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
-            float targetSpeed = (walking ? walkSpeed : runSpeed) * input.magnitude;
+            Vector2 input    = ReadMoveInput();
+            bool    slowWalk = Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+
+            float skillMult  = skillExecutor != null ? skillExecutor.MovementMultiplier : 1f;
+            float topSpeed   = slowWalk ? walkSpeed : runSpeed;
+            float targetSpeed = topSpeed * input.magnitude * skillMult;
 
             Vector3 moveDir = CameraRelativeDirection(input);
             Vector3 desiredHorizontalVelocity = moveDir * targetSpeed;
 
-            // Smooth horizontal velocity toward the desired vector
             horizontalVelocity = Vector3.MoveTowards(
                 horizontalVelocity,
                 desiredHorizontalVelocity,
                 acceleration * Time.deltaTime
             );
 
-            // Gravity: stick to ground when grounded, accumulate when in the air
             if (controller.isGrounded && verticalVelocity < 0f)
-            {
-                verticalVelocity = -2f; // small negative to keep us grounded on slopes
-            }
+                verticalVelocity = -2f;
             else
-            {
                 verticalVelocity += gravity * Time.deltaTime;
-            }
 
-            // Move
-            Vector3 motion = horizontalVelocity + Vector3.up * verticalVelocity;
-            controller.Move(motion * Time.deltaTime);
+            controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * Time.deltaTime);
 
-            // Rotate to face the movement direction (only while we're actually moving)
-            if (horizontalVelocity.sqrMagnitude > 0.01f)
+            bool rotLocked = skillExecutor != null && skillExecutor.LockRotation;
+            if (!rotLocked && horizontalVelocity.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(horizontalVelocity.normalized);
                 transform.rotation = Quaternion.RotateTowards(
@@ -115,13 +119,39 @@ namespace Kaligo
                 );
             }
 
-            float animSpeed = input.magnitude < 0.01f ? 0f
-                           : walking ? 0.5f
-                           : 1.0f;
-            animator.SetFloat(SpeedHash, animSpeed);
+            // Local velocity normalized to runSpeed for the 2D blend tree
+            float localX = Vector3.Dot(horizontalVelocity, transform.right)   / runSpeed;
+            float localZ = Vector3.Dot(horizontalVelocity, transform.forward) / runSpeed;
+            animator.SetFloat(VelocityXHash, localX);
+            animator.SetFloat(VelocityZHash, localZ);
+        }
+
+        // ─── Root motion ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Called by Unity instead of auto-applying root motion.
+        /// During attacks (lockRotation=true) we apply only the root ROTATION delta from
+        /// the clip — this is what makes spinning/turning attack animations look correct.
+        /// Root position is always ignored: CharacterController.Move() owns all movement.
+        /// </summary>
+        private void OnAnimatorMove()
+        {
+            if (skillExecutor != null && skillExecutor.LockRotation)
+                transform.rotation *= animator.deltaRotation;
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────
+
+        public void ApplyJumpImpulse(float force)
+        {
+            if (controller.isGrounded)
+                verticalVelocity = force;
+        }
+
+        public void ApplyDodgeImpulse(float force)
+        {
+            horizontalVelocity = CurrentMoveDirection * force;
+        }
 
         /// <summary>Read WASD as a 2D input vector in [-1, 1]. Diagonals normalized.</summary>
         private Vector2 ReadMoveInput()

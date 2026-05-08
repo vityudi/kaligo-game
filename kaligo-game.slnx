@@ -1,4 +1,7 @@
 ﻿<Solution>
-  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.ProBuilder.Tests.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.ProBuilder.Editor.csproj" />
+  <Project Path="com.IvanMurzak.Unity.MCP.ProBuilder.Editor.Tests.csproj" />
 </Solution>
