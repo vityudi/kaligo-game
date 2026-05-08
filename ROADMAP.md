@@ -42,9 +42,11 @@
 - Download Mixamo idle / walk / run / jump / strafe animations and assign them to the humanoid rig.
 - Build an **Animator Controller** with a 2D blend tree (idle ↔ walk ↔ run) driven by movement speed, plus a jump state.
 - Implement WASD movement with sprint (Left Shift) and jump (Space) using Unity's new **Input System**.
-- Camera: a **Cinemachine FreeLook** virtual camera that orbits the player on mouse move and handles wall collision automatically.
-- Smooth turning — character rotates toward the movement direction.
+- Camera: a **Cinemachine FreeLook** (or Cinemachine 3 `CinemachineCamera` with Orbital follow) configured for over-the-shoulder framing per VISION §1 — orbits the player on mouse move, handles wall collision automatically.
+- Smooth turning — character rotates toward the movement direction (free-aim mode).
 - Tune acceleration, friction, jump height, gravity *until it feels good*. This is not throwaway tuning; it's the foundation of how your game feels.
+
+> **Lock-on staging:** per VISION §5, our targeting is hybrid (free-aim default, Tab to lock on). Phase 1 builds **only the free-aim camera**. The lock-on camera — a second Cinemachine virtual camera that activates when a target is acquired and the brain blends to it — is added in **Phase 3**, once enemies exist to lock onto. Don't try to build it now; there's nothing to point at.
 
 **Exit criterion:** You can run around an empty plane and it feels satisfying. Friends who try it say "this feels good."
 
@@ -88,6 +90,7 @@
 - **Block** (Q or hold RMB): reduces incoming damage, costs stamina.
 - One enemy with a simple state machine: walks toward player, attacks when in range, telegraphs each swing.
 - Stamina bar for player; health bar for both.
+- **Lock-on layer (hybrid targeting):** add a second Cinemachine virtual camera that frames the locked target and a `Targeting` component that finds the best candidate via a forward sphere-cast. **Tab** toggles lock; while locked, movement becomes strafe-relative and dodges become directional relative to the target. Hit detection itself does not change — we still resolve hits via hitbox overlap, not by "current target."
 - **Game feel pass:** hit-stop on impact (~80ms freeze using `Time.timeScale`), Cinemachine Impulse screen shake on heavy hits, hit sparks/particles, hit sound effects, knockback. *This is the lesson of the phase: the game is a different game with these vs. without.*
 
 **Exit criterion:** Fighting one enemy is genuinely fun. You catch yourself fighting it again "just one more time" while testing.

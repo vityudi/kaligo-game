@@ -11,14 +11,23 @@ A 3D fantasy MMORPG with skill-based real-time combat, built solo from scratch i
 
 ## Repository Structure
 
+The Unity project sits at the repo root — no nested project folder. Docs live alongside the Unity-managed directories.
+
 ```
-kaligo/
+kaligo-game/
 ├── README.md            ← you are here
 ├── VISION.md            ← the design north star
 ├── ROADMAP.md           ← phased milestones (Act I single-player → Act II MMO)
 ├── .gitignore           ← Unity-aware ignores
 ├── .gitattributes       ← Git LFS rules for binary assets
-└── Kaligo/              ← Unity project (created in Phase 0)
+├── Assets/              ← Unity assets, scripts, scenes — the game lives here
+├── Packages/            ← Unity Package Manager manifest (committed)
+├── ProjectSettings/     ← Unity project settings (committed)
+├── kaligo-game.slnx     ← Visual Studio / Rider solution file (committed)
+├── Library/             ← Unity-generated, gitignored
+├── Logs/                ← Unity-generated, gitignored
+├── Temp/                ← Unity-generated, gitignored
+└── UserSettings/        ← per-user IDE state, gitignored
 ```
 
 ## Tech Stack (locked in)

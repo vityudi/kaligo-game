@@ -28,6 +28,8 @@ The name also fits the design without explaining it. Caligo is what dims the wor
 | Art style | Low-poly, stylized (non-realistic) | Closer to *A Short Hike*, *RuneScape 3*, or stylized-low-poly Zelda — readable shapes, low texture detail |
 | Theme | Fantasy medieval | Knights, magic, ruins, woods, taverns |
 | Combat | Real-time, action-based, **no auto-attack** | Every input is intentional — basic attacks, dodges, blocks, and spells are all "skills" |
+| Camera | Third-person, over-the-shoulder | Cinemachine handles the heavy lifting; tunable distance/height/FOV |
+| Targeting | **Hybrid** — free-aim default, optional tab lock-on | Elden Ring / New World model: hitbox-based combat as the foundation, lock-on as a layer on top |
 | Scope | Learning-first, but with a long-haul ambition | Project sized to maximize what we learn while building toward the MMO vision |
 | Developer background | Web dev (JS/TS, Python), no gamedev | Learning C# as part of the journey |
 
@@ -111,7 +113,15 @@ This is your strongest commitment so far, so it gets its own section.
 - **Class skills** — 4–6 active abilities tied to weapon/spec, on cooldowns. Skill bar.
 - **Resource systems** — at least one (stamina). Possibly two (stamina + mana/focus).
 
-Reference points to study seriously: **Mortal Online 2's first-person combat**, **For Honor's directional system**, **Black Desert's action combat**, **Albion's cooldown-and-positioning combat**, **Soulslike combat in general**.
+**Targeting — hybrid model.** Free-aim is the default state. Every swing is a deliberate spatial choice; hits register against hitboxes in front of the player, not against a selected target. Players can press **Tab** to acquire a lock-on if there's a valid target in view — locked, the camera frames the target, movement becomes strafe-relative, and dodges are directional relative to the locked target. Press Tab again (or kill the target) to release.
+
+Implications:
+
+- Hit detection is fundamentally hitbox-based — there is no "current target" required for an attack to resolve.
+- Lock-on is *only* a camera + movement layer. It does not change how damage is calculated.
+- This means combat can be built free-aim-first (Phase 3), with lock-on added as a clean second layer once the basics feel good.
+
+Reference points to study seriously: **Elden Ring's hybrid lock/free system** (closest match to our model), **Mortal Online 2's first-person combat**, **For Honor's directional system**, **Black Desert's action combat**, **New World's hybrid targeting**, **Soulslike combat in general**.
 
 The goal is *reactive* combat. The player is constantly reading the enemy and choosing — not selecting from a menu, not waiting for a cooldown to be the only thing they can do.
 
@@ -145,9 +155,9 @@ Pick a few to think on. We don't need every answer — just enough to commit to 
 
 **Combat specifics:**
 
-- Third-person over-the-shoulder, isometric/top-down 3D, or first-person? *(Recommendation: third-person — easiest to read your own animations, fits Albion/RuneScape vibe, and Cinemachine makes it almost free.)*
+- ~~Third-person over-the-shoulder, isometric/top-down 3D, or first-person?~~ → **Third-person, over-the-shoulder.** *(Locked: 2026-05-08)*
 - Stamina-based? Mana-based? Both?
-- Lock-on targeting (Zelda/Dark Souls) or free-aim (Elden Ring/Black Desert)?
+- ~~Lock-on targeting (Zelda/Dark Souls) or free-aim (Elden Ring/Black Desert)?~~ → **Hybrid — free-aim default, Tab to lock on.** *(Locked: 2026-05-08. See §5 for the implementation model.)*
 
 **The world:**
 
