@@ -66,8 +66,8 @@ namespace Kaligo
         [Tooltip("How fast the camera swings to face the locked target (degrees/sec).")]
         [SerializeField] private float lockOnTrackSpeed = 180f;
 
-        [Tooltip("Pitch held while lock-on is active.")]
-        [SerializeField] private float lockOnPitch = -20f;
+        [Tooltip("Height offset added to the target's root position to approximate its center (e.g. chest).")]
+        [SerializeField] private float lockOnAimHeight = 1.0f;
 
         // ─── Internals ────────────────────────────────────────────────────────
 
@@ -117,17 +117,23 @@ namespace Kaligo
 
         private void TrackLockedTarget(Transform target)
         {
-            // Compute the yaw that places the camera behind the player facing the target
-            Vector3 toTarget = target.position - transform.position;
-            toTarget.y = 0f;
-            if (toTarget.sqrMagnitude < 0.001f) return;
+            // Yaw: swing behind the player so we face the target
+            Vector3 flat = target.position - transform.position;
+            flat.y = 0f;
+            if (flat.sqrMagnitude < 0.001f) return;
 
-            float desiredYaw   = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
-            float desiredPitch = lockOnPitch;
+            float desiredYaw = Mathf.Atan2(flat.x, flat.z) * Mathf.Rad2Deg;
+
+            // Pitch: geometric elevation from CameraTarget to the target's approximate center.
+            // This codebase uses inverted pitch sign (positive = down, negative = up), so negate.
+            Vector3 toAimPoint = (target.position + Vector3.up * lockOnAimHeight) - transform.position;
+            float hDist        = new Vector3(toAimPoint.x, 0f, toAimPoint.z).magnitude;
+            float desiredPitch = -Mathf.Atan2(toAimPoint.y, hDist) * Mathf.Rad2Deg;
+            desiredPitch       = Mathf.Clamp(desiredPitch, minPitch, maxPitch);
 
             float maxDelta = lockOnTrackSpeed * Time.deltaTime;
             yaw   = Mathf.MoveTowardsAngle(yaw,   desiredYaw,   maxDelta);
-            pitch = Mathf.MoveTowards(pitch, desiredPitch, maxDelta);
+            pitch = Mathf.MoveTowards      (pitch, desiredPitch, maxDelta);
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────

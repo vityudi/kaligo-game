@@ -4171,7 +4171,7 @@ MonoBehaviour:
   maxPitch: 70
   lockCursor: 1
   lockOnTrackSpeed: 180
-  lockOnPitch: -10
+  lockOnAimHeight: 1
 --- !u!1 &455067822
 GameObject:
   m_ObjectHideFlags: 0
@@ -55179,7 +55179,7 @@ MonoBehaviour:
   maxPitch: 70
   lockCursor: 1
   lockOnTrackSpeed: 180
-  lockOnPitch: -40
+  lockOnAimHeight: 1
 --- !u!1 &1932832856
 GameObject:
   m_ObjectHideFlags: 0
