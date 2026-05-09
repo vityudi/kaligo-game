@@ -22,7 +22,7 @@ MonoBehaviour:
   cancelLockDuration: 0
   lockRotation: 0
   steps:
-  - animatorTrigger: 
+  - animatorTrigger: PowerUp
     duration: 5
     comboWindowStart: 0
     comboWindowEnd: 0

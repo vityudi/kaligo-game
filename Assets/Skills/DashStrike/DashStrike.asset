@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9900fc2c99bd21849be1a90fb0a6e9f6, type: 3}
   m_Name: DashStrike
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
-  skillName: Dash Strike
+  skillName: Kick
   icon: {fileID: 21300000, guid: 2e612f7a60855074e9626aebda7485e0, type: 3}
   cooldown: 6
   description: Dash forward and slash. Closes the gap instantly.

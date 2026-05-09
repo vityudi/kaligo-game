@@ -239,13 +239,11 @@ namespace Kaligo.Skills
 
         private void SnapToCameraForward()
         {
-            var cam = Camera.main;
-            if (cam == null) return;
-
-            Vector3 forward = cam.transform.forward;
-            forward.y = 0f;
-            if (forward.sqrMagnitude > 0.001f)
-                transform.rotation = Quaternion.LookRotation(forward.normalized);
+            // CameraTarget child stores the pure orbit yaw written by CameraOrbitInput.
+            // The main camera Y angle is wrong — it faces *toward* the player and drifts with shoulder offset.
+            var pivot = transform.Find("CameraTarget");
+            float yaw = pivot != null ? pivot.eulerAngles.y : (Camera.main != null ? Camera.main.transform.eulerAngles.y : transform.eulerAngles.y);
+            transform.rotation = Quaternion.Euler(0f, yaw, 0f);
         }
     }
 }

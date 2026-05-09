@@ -51,6 +51,7 @@ namespace Kaligo
         private CharacterController controller;
         private Animator animator;
         private Camera mainCamera;
+        private Transform cameraTarget;
 
         private Vector3 horizontalVelocity;
         private float   verticalVelocity;
@@ -75,6 +76,7 @@ namespace Kaligo
             mainCamera     = Camera.main;
             skillExecutor  = GetComponent<Kaligo.Skills.SkillExecutor>();
             targeting      = GetComponent<Kaligo.Combat.Targeting>();
+            cameraTarget   = transform.Find("CameraTarget");
 
             if (mainCamera == null)
             {
@@ -129,14 +131,15 @@ namespace Kaligo
             }
             else if (faceCamera)
             {
-                // While blocking: always face camera forward regardless of movement direction.
-                Vector3 camForward = mainCamera != null ? mainCamera.transform.forward : transform.forward;
-                camForward.y = 0f;
-                if (camForward.sqrMagnitude > 0.001f)
-                    transform.rotation = Quaternion.RotateTowards(
-                        transform.rotation,
-                        Quaternion.LookRotation(camForward.normalized),
-                        turnSpeedDegPerSec * Time.deltaTime);
+                // CameraTarget stores the pure orbit yaw (set by CameraOrbitInput).
+                // Using the main camera's angle is wrong — it faces *toward* the player
+                // from an offset position, so its Y angle drifts depending on shoulder offset.
+                Transform pivot = cameraTarget != null ? cameraTarget : mainCamera?.transform;
+                float targetYaw = pivot != null ? pivot.eulerAngles.y : transform.eulerAngles.y;
+                transform.rotation = Quaternion.RotateTowards(
+                    transform.rotation,
+                    Quaternion.Euler(0f, targetYaw, 0f),
+                    turnSpeedDegPerSec * Time.deltaTime);
             }
             else if (!rotLocked && horizontalVelocity.sqrMagnitude > 0.01f)
             {
@@ -153,6 +156,24 @@ namespace Kaligo
             float localZ = Vector3.Dot(horizontalVelocity, transform.forward) / runSpeed;
             animator.SetFloat(VelocityXHash, localX);
             animator.SetFloat(VelocityZHash, localZ);
+        }
+
+        // ─── Body orientation fix ─────────────────────────────────────────────
+
+        private void LateUpdate()
+        {
+            if (skillExecutor == null || !skillExecutor.FaceCameraAlways) return;
+
+            // The block idle animation's muscle curves rotate the body/spine to face the
+            // Mixamo-native +X direction.  The Animator writes those bone rotations before
+            // LateUpdate, so we correct them here: rotate the Hips bone so the whole body
+            // (spine, chest, arms) faces the Player transform's Y angle.  Child bones keep
+            // their local rotations, preserving the shield-raised pose.
+            Transform hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            if (hips == null) return;
+
+            float correction = transform.eulerAngles.y - hips.eulerAngles.y;
+            hips.Rotate(Vector3.up, correction, Space.World);
         }
 
         // ─── IK ───────────────────────────────────────────────────────────────
