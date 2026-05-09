@@ -12,8 +12,14 @@ namespace Kaligo.Skills
         [Tooltip("Seconds before this skill can be activated again after the last step completes.")]
         public float cooldown = 0f;
 
+        [Tooltip("Short description shown in the skill tooltip.")]
+        [TextArea(2, 4)] public string description;
+
         [Tooltip("Stamina cost on activation.")]
         public float staminaCost = 0f;
+
+        [Tooltip("Mana cost on activation.")]
+        public float manaCost = 0f;
 
         [Tooltip("Fraction of normal movement speed while this skill is executing (1 = full speed, 0 = stop). Attack skills ~0.35, Block = 0.")]
         [Range(0f, 1f)] public float movementMultiplier = 1f;

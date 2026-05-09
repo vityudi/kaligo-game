@@ -15,7 +15,10 @@ MonoBehaviour:
   skillName: Sword Combo
   icon: {fileID: 0}
   cooldown: 0
+  description: A quick 3-hit combo. Press LMB during the combo window to chain the
+    next strike.
   staminaCost: 0
+  manaCost: 0
   movementMultiplier: 0.35
   cancelLockDuration: 0.25
   lockRotation: 1
@@ -45,11 +48,14 @@ MonoBehaviour:
       type: {class: HitboxEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
       data:
         damage: 15
+        isHeavyAttack: 0
     - rid: 656009515804656030
       type: {class: HitboxEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
       data:
         damage: 15
+        isHeavyAttack: 0
     - rid: 656009515804656031
       type: {class: HitboxEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
       data:
         damage: 20
+        isHeavyAttack: 0

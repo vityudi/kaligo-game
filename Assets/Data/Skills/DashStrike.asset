@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9900fc2c99bd21849be1a90fb0a6e9f6, type: 3}
+  m_Name: DashStrike
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
+  skillName: Dash Strike
+  icon: {fileID: 0}
+  cooldown: 6
+  description: Dash forward and slash. Closes the gap instantly.
+  staminaCost: 0
+  manaCost: 20
+  movementMultiplier: 0.8
+  cancelLockDuration: 0.25
+  lockRotation: 1
+  steps:
+  - animatorTrigger: Dodge
+    duration: 0.55
+    comboWindowStart: 0
+    comboWindowEnd: 0
+    effects:
+    - rid: 656009541195399238
+  references:
+    version: 2
+    RefIds:
+    - rid: 656009541195399238
+      type: {class: DashStrikeEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
+      data:
+        dashForce: 18
+        damage: 40

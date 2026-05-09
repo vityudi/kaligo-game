@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using Kaligo.Combat;
 
@@ -15,31 +16,59 @@ namespace Kaligo.Skills
         public bool             IsInvincible       { get; private set; }
         public float            MovementMultiplier { get; private set; } = 1f;
         public bool             LockRotation       { get; private set; }
+        /// <summary>While true, the character continuously rotates to face the camera's horizontal forward.</summary>
+        public bool             FaceCameraAlways   { get; set; }
 
         private float skillStartTime;
 
         private Animator          animator;
         private PlayerController  playerController;
         private StaminaSystem     stamina;
+        private ManaSystem        mana;
         private SkillData         currentSkill;
         private int               currentStep;
         private bool              inComboWindow;
         private bool              nextStepQueued;
         private Coroutine         executionRoutine;
         private Coroutine         iFrameRoutine;
-        private float             cooldownRemaining;
+
+        // Per-skill independent cooldown tracking
+        private readonly Dictionary<SkillData, float> cooldowns = new();
 
         private void Awake()
         {
             animator         = GetComponent<Animator>();
             playerController = GetComponent<PlayerController>();
             stamina          = GetComponent<StaminaSystem>();
+            mana             = GetComponent<ManaSystem>();
         }
 
         private void Update()
         {
-            if (cooldownRemaining > 0f)
-                cooldownRemaining -= Time.deltaTime;
+            if (cooldowns.Count == 0) return;
+            var keys = new List<SkillData>(cooldowns.Keys);
+            foreach (var skill in keys)
+            {
+                cooldowns[skill] -= Time.deltaTime;
+                if (cooldowns[skill] <= 0f)
+                    cooldowns.Remove(skill);
+            }
+        }
+
+        // ── Cooldown query for UI ─────────────────────────────────────────────
+
+        /// <summary>Remaining cooldown in seconds (0 if ready).</summary>
+        public float GetCooldownRemaining(SkillData skill)
+        {
+            return (skill != null && cooldowns.TryGetValue(skill, out float remaining))
+                ? Mathf.Max(0f, remaining) : 0f;
+        }
+
+        /// <summary>0 = ready, 1 = full cooldown. Safe to use as radial fill amount.</summary>
+        public float GetCooldownFraction(SkillData skill)
+        {
+            if (skill == null || skill.cooldown <= 0f) return 0f;
+            return GetCooldownRemaining(skill) / skill.cooldown;
         }
 
         // ── Public API ────────────────────────────────────────────────────────
@@ -47,9 +76,12 @@ namespace Kaligo.Skills
         public bool TryActivate(SkillData skill)
         {
             if (skill == null || skill.steps.Count == 0) return false;
-            if (cooldownRemaining > 0f) return false;
+            if (cooldowns.ContainsKey(skill) && cooldowns[skill] > 0f) return false;
 
             if (stamina != null && skill.staminaCost > 0f && !stamina.TrySpend(skill.staminaCost))
+                return false;
+
+            if (mana != null && skill.manaCost > 0f && !mana.TrySpend(skill.manaCost))
                 return false;
 
             if (currentSkill == skill && inComboWindow && currentStep + 1 < skill.steps.Count)
@@ -113,9 +145,6 @@ namespace Kaligo.Skills
                 nextStepQueued = false;
                 inComboWindow  = false;
 
-                // Snap to camera before the trigger so the character faces the right direction.
-                // We snap AGAIN after the transition frames (below) because OnAnimatorMove can
-                // drift the rotation during the animator blend-out of the previous state.
                 if (skill.lockRotation)
                     SnapToCameraForward();
 
@@ -125,11 +154,9 @@ namespace Kaligo.Skills
                 foreach (var effect in step.effects)
                     effect.OnActivate(this);
 
-                // Wait for the animator transition to settle (~2 frames at 60 fps)
                 yield return null;
                 yield return null;
 
-                // Re-snap: clears any rotation drift accumulated during the blend transition
                 if (skill.lockRotation)
                     SnapToCameraForward();
 
@@ -159,7 +186,9 @@ namespace Kaligo.Skills
                     break;
             }
 
-            cooldownRemaining  = skill.cooldown;
+            if (skill.cooldown > 0f)
+                cooldowns[skill] = skill.cooldown;
+
             MovementMultiplier = 1f;
             LockRotation       = false;
             currentSkill       = null;
@@ -179,6 +208,11 @@ namespace Kaligo.Skills
 
             if (iFrameRoutine != null) StopCoroutine(iFrameRoutine);
             iFrameRoutine = StartCoroutine(IFrames(iFrameDuration));
+        }
+
+        public void DashForward(float force)
+        {
+            playerController?.ApplyDashForward(force);
         }
 
         public void StopDodge() { }

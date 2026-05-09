@@ -115,6 +115,8 @@ namespace Kaligo
             bool rotLocked    = skillExecutor != null && skillExecutor.LockRotation;
             bool lockOnActive = targeting != null && targeting.IsLocked;
 
+            bool faceCamera = skillExecutor != null && skillExecutor.FaceCameraAlways;
+
             if (lockOnActive)
             {
                 // Lock-on facing wins over everything — even skill rotation lock.
@@ -124,6 +126,17 @@ namespace Kaligo
                 toTarget.y = 0f;
                 if (toTarget.sqrMagnitude > 0.001f)
                     transform.rotation = Quaternion.LookRotation(toTarget.normalized);
+            }
+            else if (faceCamera)
+            {
+                // While blocking: always face camera forward regardless of movement direction.
+                Vector3 camForward = mainCamera != null ? mainCamera.transform.forward : transform.forward;
+                camForward.y = 0f;
+                if (camForward.sqrMagnitude > 0.001f)
+                    transform.rotation = Quaternion.RotateTowards(
+                        transform.rotation,
+                        Quaternion.LookRotation(camForward.normalized),
+                        turnSpeedDegPerSec * Time.deltaTime);
             }
             else if (!rotLocked && horizontalVelocity.sqrMagnitude > 0.01f)
             {
@@ -185,6 +198,11 @@ namespace Kaligo
         public void ApplyDodgeImpulse(float force)
         {
             horizontalVelocity = CurrentMoveDirection * force;
+        }
+
+        public void ApplyDashForward(float force)
+        {
+            horizontalVelocity = transform.forward * force;
         }
 
         /// <summary>Read WASD as a 2D input vector in [-1, 1]. Diagonals normalized.</summary>

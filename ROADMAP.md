@@ -349,14 +349,19 @@ Resources worth bookmarking now and revisiting at the right phase:
 - [x] Phase 0 — Foundations
 - [x] Phase 1 — Third-Person Character Controller
 - [x] Phase 2 — A World to Walk In
-- [ ] **Phase 3 — Combat Foundations** ← in progress
+- [x] **Phase 3 — Combat Foundations**
     - [x] 3A — Skill system core (SkillData / SkillBar / SkillExecutor), HitboxController, HealthSystem, 3-hit combo + heavy attack
     - [x] 3B — Block (hold, 80% DR), Jump, Dodge (i-frames), StaminaSystem, custom key-mapping API, animation cancel lock, movement multiplier during skills, camera-facing attack snap, 2D locomotion blend tree (9 clips)
     - [x] 3C — EnemyAI state machine (Idle → Chase → Attack → Dead), EnemyAnimator, world-space health bar
-    - [ ] 3D — Player HUD (HP bar + stamina bar)
-    - [ ] 3E — Lock-on targeting (Tab toggle, second Cinemachine vcam, strafe-relative movement)
-    - [ ] 3F — Game-feel pass (hit-stop, Cinemachine Impulse shake, hit particles + SFX, knockback)
-- [ ] Phase 4 — Combat Depth (Skill Bar UI + active abilities) — *note: SkillData ScriptableObject system already built in Phase 3; Phase 4 adds cooldown UI, mana, and additional skill types*
+    - [x] 3D — Player HUD (HP bar + stamina bar)
+    - [x] 3E — Lock-on targeting (Tab toggle, second Cinemachine vcam, strafe-relative movement)
+    - [x] 3F — Game-feel pass (hit-stop, Cinemachine Impulse shake, hit particles + SFX, knockback)
+- [ ] **Phase 4 — Combat Depth** ← in progress
+    - [x] 4A — ManaSystem (100 mana, 5/s regen after 2s delay), manaCost on SkillData, per-skill independent cooldown tracking, mana bar in HUD
+    - [x] 4B — New skill effects: DashStrikeEffect (gap-closer), AOESwingEffect (radius damage), DefensiveBuffEffect (timed DR), HealEffect
+    - [x] 4C — Skill bar hotbar UI (4 slots, radial cooldown overlay, key hints, mana cost labels)
+    - [x] 4D — 4 active skills on Key1-4: Dash Strike (20mp,6s), Whirlwind AOE (35mp,10s), Iron Skin buff (30mp,14s), Quick Mend heal (45mp,18s)
+    - [x] 4E — Second enemy type: ShieldedEnemy (75% DR always, breaks on heavy hit for 3s stagger window)
 - [ ] Phase 5 — Progression
 - [ ] Phase 6 — Inventory & Equipment
 - [ ] Phase 7 — NPCs, Dialogue, Quest

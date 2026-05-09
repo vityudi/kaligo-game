@@ -14,12 +14,14 @@ namespace Kaligo.Skills.Effects
         {
             executor.Animator.SetBool("IsBlocking", true);
             executor.StartBlock(damageReduction);
+            executor.FaceCameraAlways = true;
         }
 
         public override void OnDeactivate(SkillExecutor executor)
         {
             executor.Animator.SetBool("IsBlocking", false);
             executor.StopBlock();
+            executor.FaceCameraAlways = false;
         }
     }
 }

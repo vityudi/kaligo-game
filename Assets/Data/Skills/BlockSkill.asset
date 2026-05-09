@@ -15,8 +15,11 @@ MonoBehaviour:
   skillName: Block
   icon: {fileID: 0}
   cooldown: 0
+  description: Hold to raise your shield. Absorbs 80% of incoming damage. You can
+    walk while blocking.
   staminaCost: 0
-  movementMultiplier: 0
+  manaCost: 0
+  movementMultiplier: 0.5
   cancelLockDuration: 0
   lockRotation: 0
   steps:

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9900fc2c99bd21849be1a90fb0a6e9f6, type: 3}
+  m_Name: QuickMend
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
+  skillName: Quick Mend
+  icon: {fileID: 0}
+  cooldown: 18
+  description: Channel briefly to restore 40 HP.
+  staminaCost: 0
+  manaCost: 45
+  movementMultiplier: 0
+  cancelLockDuration: 0.3
+  lockRotation: 0
+  steps:
+  - animatorTrigger: 
+    duration: 1.2
+    comboWindowStart: 0
+    comboWindowEnd: 0
+    effects:
+    - rid: 656009541195399235
+  references:
+    version: 2
+    RefIds:
+    - rid: 656009541195399235
+      type: {class: HealEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
+      data:
+        healAmount: 40
+        vfxPrefab: {fileID: 0}
