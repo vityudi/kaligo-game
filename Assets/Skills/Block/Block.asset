@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9900fc2c99bd21849be1a90fb0a6e9f6, type: 3}
+  m_Name: Block
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
+  skillName: Block
+  icon: {fileID: 0}
+  cooldown: 0
+  description: Hold to raise your shield. Absorbs 80% of incoming damage. You can
+    walk while blocking.
+  staminaCost: 0
+  manaCost: 0
+  movementMultiplier: 0.5
+  cancelLockDuration: 0
+  lockRotation: 0
+  steps:
+  - animatorTrigger: 
+    duration: 999
+    comboWindowStart: 0
+    comboWindowEnd: 0
+    effects:
+    - rid: 656009515804656033
+  references:
+    version: 2
+    RefIds:
+    - rid: 656009515804656033
+      type: {class: BlockEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
+      data:
+        damageReduction: 0.8
