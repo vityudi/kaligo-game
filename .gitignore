@@ -1,3 +1,8 @@
+# Secrets and local config (NEVER commit)
+.mcp.json
+.claude/settings.local.json
+.claude/skills/
+
 # Unity .gitignore Template
 # Source: https://github.com/github/gitignore/blob/main/Unity.gitignore
 # Last synced: 2025-12-18

@@ -64,6 +64,7 @@ namespace Kaligo
         private static readonly int VelocityZHash = Animator.StringToHash("VelocityZ");
 
         private Kaligo.Skills.SkillExecutor skillExecutor;
+        private Kaligo.Combat.Targeting     targeting;
 
         // ─── Lifecycle ────────────────────────────────────────────────────────
 
@@ -73,6 +74,7 @@ namespace Kaligo
             animator       = GetComponent<Animator>();
             mainCamera     = Camera.main;
             skillExecutor  = GetComponent<Kaligo.Skills.SkillExecutor>();
+            targeting      = GetComponent<Kaligo.Combat.Targeting>();
 
             if (mainCamera == null)
             {
@@ -92,7 +94,9 @@ namespace Kaligo
             float topSpeed   = slowWalk ? walkSpeed : runSpeed;
             float targetSpeed = topSpeed * input.magnitude * skillMult;
 
-            Vector3 moveDir = CameraRelativeDirection(input);
+            Vector3 moveDir = targeting != null && targeting.IsLocked
+                ? LockOnRelativeDirection(input, targeting.LockedTarget)
+                : CameraRelativeDirection(input);
             Vector3 desiredHorizontalVelocity = moveDir * targetSpeed;
 
             horizontalVelocity = Vector3.MoveTowards(
@@ -108,8 +112,20 @@ namespace Kaligo
 
             controller.Move((horizontalVelocity + Vector3.up * verticalVelocity) * Time.deltaTime);
 
-            bool rotLocked = skillExecutor != null && skillExecutor.LockRotation;
-            if (!rotLocked && horizontalVelocity.sqrMagnitude > 0.01f)
+            bool rotLocked    = skillExecutor != null && skillExecutor.LockRotation;
+            bool lockOnActive = targeting != null && targeting.IsLocked;
+
+            if (lockOnActive)
+            {
+                // Lock-on facing wins over everything — even skill rotation lock.
+                // This prevents SnapToCameraForward() from pulling the character
+                // off-axis when the camera has a shoulder offset.
+                Vector3 toTarget = targeting.LockedTarget.position - transform.position;
+                toTarget.y = 0f;
+                if (toTarget.sqrMagnitude > 0.001f)
+                    transform.rotation = Quaternion.LookRotation(toTarget.normalized);
+            }
+            else if (!rotLocked && horizontalVelocity.sqrMagnitude > 0.01f)
             {
                 Quaternion targetRotation = Quaternion.LookRotation(horizontalVelocity.normalized);
                 transform.rotation = Quaternion.RotateTowards(
@@ -124,6 +140,24 @@ namespace Kaligo
             float localZ = Vector3.Dot(horizontalVelocity, transform.forward) / runSpeed;
             animator.SetFloat(VelocityXHash, localX);
             animator.SetFloat(VelocityZHash, localZ);
+        }
+
+        // ─── IK ───────────────────────────────────────────────────────────────
+
+        private void OnAnimatorIK(int layerIndex)
+        {
+            if (targeting != null && targeting.IsLocked && targeting.LockedTarget != null)
+            {
+                // Point the head at the enemy's chest height
+                Vector3 lookPoint = targeting.LockedTarget.position + Vector3.up * 1.4f;
+                animator.SetLookAtPosition(lookPoint);
+                // weight=1, bodyWeight=0 (body already faces via transform), headWeight=0.7
+                animator.SetLookAtWeight(1f, 0f, 0.7f, 0f, 0.5f);
+            }
+            else
+            {
+                animator.SetLookAtWeight(0f);
+            }
         }
 
         // ─── Root motion ──────────────────────────────────────────────────────
@@ -174,14 +208,28 @@ namespace Kaligo
         private Vector3 CameraRelativeDirection(Vector2 input)
         {
             if (mainCamera == null)
-            {
                 return new Vector3(input.x, 0f, input.y);
-            }
 
             Vector3 forward = mainCamera.transform.forward;
-            Vector3 right = mainCamera.transform.right;
+            Vector3 right   = mainCamera.transform.right;
             forward.y = 0f; right.y = 0f;
             forward.Normalize(); right.Normalize();
+
+            return forward * input.y + right * input.x;
+        }
+
+        /// <summary>
+        /// W/S moves toward / away from the locked target; A/D strafe perpendicular to it.
+        /// </summary>
+        private Vector3 LockOnRelativeDirection(Vector2 input, Transform target)
+        {
+            Vector3 forward = target.position - transform.position;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 0.001f)
+                return CameraRelativeDirection(input);
+
+            forward.Normalize();
+            Vector3 right = new Vector3(forward.z, 0f, -forward.x); // 90° CW in XZ
 
             return forward * input.y + right * input.x;
         }

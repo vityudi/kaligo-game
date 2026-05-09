@@ -62,22 +62,29 @@ namespace Kaligo
                  "Press Esc in the Editor to release it.")]
         [SerializeField] private bool lockCursor = true;
 
+        [Header("Lock-On")]
+        [Tooltip("How fast the camera swings to face the locked target (degrees/sec).")]
+        [SerializeField] private float lockOnTrackSpeed = 180f;
+
+        [Tooltip("Pitch held while lock-on is active.")]
+        [SerializeField] private float lockOnPitch = -20f;
+
         // ─── Internals ────────────────────────────────────────────────────────
 
         private float yaw;
         private float pitch;
+        private Kaligo.Combat.Targeting targeting;
 
         // ─── Lifecycle ────────────────────────────────────────────────────────
 
         private void Start()
         {
-            // Initialize from current WORLD rotation so the camera starts
-            // pointing wherever the player is currently facing — i.e. if the
-            // X Bot is rotated 90° in the scene, the camera starts behind
-            // them, not at world-Z forward.
             Vector3 e = transform.eulerAngles;
             yaw = e.y;
             pitch = NormalizePitch(e.x);
+
+            // Targeting lives on the player (parent of CameraTarget)
+            targeting = GetComponentInParent<Kaligo.Combat.Targeting>();
 
             if (lockCursor)
             {
@@ -88,18 +95,39 @@ namespace Kaligo
 
         private void LateUpdate()
         {
-            if (Mouse.current == null) return;
+            if (targeting != null && targeting.IsLocked)
+            {
+                TrackLockedTarget(targeting.LockedTarget);
+            }
+            else
+            {
+                if (Mouse.current == null) return;
+                Vector2 delta = Mouse.current.delta.ReadValue();
 
-            Vector2 delta = Mouse.current.delta.ReadValue();
+                yaw += delta.x * horizontalSensitivity;
 
-            yaw += delta.x * horizontalSensitivity;
-
-            float dy = -delta.y * verticalSensitivity;
-            if (invertY) dy = -dy;
-            pitch = Mathf.Clamp(pitch + dy, minPitch, maxPitch);
+                float dy = -delta.y * verticalSensitivity;
+                if (invertY) dy = -dy;
+                pitch = Mathf.Clamp(pitch + dy, minPitch, maxPitch);
+            }
 
             // World rotation, NOT localRotation — see class docstring for why.
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+        }
+
+        private void TrackLockedTarget(Transform target)
+        {
+            // Compute the yaw that places the camera behind the player facing the target
+            Vector3 toTarget = target.position - transform.position;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude < 0.001f) return;
+
+            float desiredYaw   = Mathf.Atan2(toTarget.x, toTarget.z) * Mathf.Rad2Deg;
+            float desiredPitch = lockOnPitch;
+
+            float maxDelta = lockOnTrackSpeed * Time.deltaTime;
+            yaw   = Mathf.MoveTowardsAngle(yaw,   desiredYaw,   maxDelta);
+            pitch = Mathf.MoveTowards(pitch, desiredPitch, maxDelta);
         }
 
         // ─── Helpers ──────────────────────────────────────────────────────────

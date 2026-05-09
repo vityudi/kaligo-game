@@ -4170,6 +4170,8 @@ MonoBehaviour:
   minPitch: -40
   maxPitch: 70
   lockCursor: 1
+  lockOnTrackSpeed: 180
+  lockOnPitch: -10
 --- !u!1 &455067822
 GameObject:
   m_ObjectHideFlags: 0
@@ -10748,6 +10750,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a24211a72fea47e4797173dc6bf21586, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1154841816}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: a24211a72fea47e4797173dc6bf21586, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1154841817}
   m_SourcePrefab: {fileID: 100100000, guid: a24211a72fea47e4797173dc6bf21586, type: 3}
 --- !u!1 &1152792561
 GameObject:
@@ -12143,6 +12148,19 @@ MonoBehaviour:
   maxStamina: 100
   regenRate: 20
   regenDelay: 1
+--- !u!114 &1154841817
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1154841808}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 061a3371735686f44a020f871911ef4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Combat.Targeting
+  detectionRadius: 20
 --- !u!1 &1167405103
 GameObject:
   m_ObjectHideFlags: 0
@@ -55160,6 +55178,8 @@ MonoBehaviour:
   minPitch: -40
   maxPitch: 70
   lockCursor: 1
+  lockOnTrackSpeed: 180
+  lockOnPitch: -40
 --- !u!1 &1932832856
 GameObject:
   m_ObjectHideFlags: 0
