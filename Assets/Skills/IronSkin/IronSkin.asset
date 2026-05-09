@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: IronSkin
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Iron Skin
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 92f197be531dbc54b94b87093d9550fb, type: 3}
   cooldown: 14
   description: Harden your skin for 5 seconds, reducing damage taken by 50%.
   staminaCost: 0

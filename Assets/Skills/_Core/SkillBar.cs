@@ -28,6 +28,9 @@ namespace Kaligo.Skills
 
         private void Update()
         {
+            if (Kaligo.CursorController.Instance != null && Kaligo.CursorController.Instance.IsUIMode)
+                return;
+
             foreach (var slot in slots)
             {
                 if (slot.skill == null) continue;

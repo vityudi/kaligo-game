@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,15 +16,21 @@ namespace Kaligo.Combat
 
         private void Awake()
         {
-            mainCam       = Camera.main;
-            playerHealth  = GetComponent<HealthSystem>();
+            mainCam      = Camera.main;
+            playerHealth = GetComponent<HealthSystem>();
         }
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.tabKey.wasPressedThisFrame)
-                ToggleLock();
+            if (Keyboard.current == null) return;
 
+            if (Keyboard.current.tabKey.wasPressedThisFrame)
+                CycleTarget();
+
+            if (Keyboard.current.escapeKey.wasPressedThisFrame && IsLocked)
+                LockedTarget = null;
+
+            // Clear dead targets automatically
             if (LockedTarget != null)
             {
                 var hs = LockedTarget.GetComponent<HealthSystem>();
@@ -32,43 +39,52 @@ namespace Kaligo.Combat
             }
         }
 
-        private void ToggleLock()
+        private void CycleTarget()
         {
-            if (IsLocked)
+            List<Transform> candidates = GetCandidatesSortedByDistance();
+            if (candidates.Count == 0)
             {
                 LockedTarget = null;
                 return;
             }
 
-            Vector3 origin = mainCam != null ? mainCam.transform.forward : transform.forward;
-            origin.y = 0f;
-            origin.Normalize();
-
-            HealthSystem[] candidates = FindObjectsByType<HealthSystem>(FindObjectsInactive.Exclude);
-            Transform best      = null;
-            float     bestScore = float.MaxValue; // lower = better (angle, then distance as tiebreak)
-
-            foreach (var hs in candidates)
+            if (!IsLocked)
             {
-                if (hs == playerHealth || hs.IsDead) continue;
-
-                float dist = Vector3.Distance(transform.position, hs.transform.position);
-                if (dist > detectionRadius) continue;
-
-                Vector3 toTarget = hs.transform.position - transform.position;
-                toTarget.y = 0f;
-                toTarget.Normalize();
-
-                float angle = Vector3.Angle(origin, toTarget);
-                float score = angle * 100f + dist; // angle dominates; distance breaks ties
-                if (score < bestScore)
-                {
-                    bestScore = score;
-                    best      = hs.transform;
-                }
+                LockedTarget = candidates[0];
+                return;
             }
 
-            LockedTarget = best;
+            int currentIndex = candidates.IndexOf(LockedTarget);
+            if (currentIndex < 0)
+            {
+                // Current target no longer in range — start from closest
+                LockedTarget = candidates[0];
+                return;
+            }
+
+            // Advance to next, wrap around to closest
+            LockedTarget = candidates[(currentIndex + 1) % candidates.Count];
+        }
+
+        private List<Transform> GetCandidatesSortedByDistance()
+        {
+            HealthSystem[] all = FindObjectsByType<HealthSystem>(FindObjectsInactive.Exclude);
+            var result = new List<(Transform t, float dist)>();
+
+            foreach (var hs in all)
+            {
+                if (hs == playerHealth || hs.IsDead) continue;
+                float dist = Vector3.Distance(transform.position, hs.transform.position);
+                if (dist <= detectionRadius)
+                    result.Add((hs.transform, dist));
+            }
+
+            result.Sort((a, b) => a.dist.CompareTo(b.dist));
+
+            var transforms = new List<Transform>(result.Count);
+            foreach (var entry in result)
+                transforms.Add(entry.t);
+            return transforms;
         }
     }
 }

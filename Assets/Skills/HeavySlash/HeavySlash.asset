@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: HeavySlash
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Heavy Slash
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: aa6ac56230631d8478f25718aea9de4e, type: 3}
   cooldown: 1.5
+  description: 
   staminaCost: 20
+  manaCost: 0
   movementMultiplier: 0.2
   cancelLockDuration: 0.5
   lockRotation: 1

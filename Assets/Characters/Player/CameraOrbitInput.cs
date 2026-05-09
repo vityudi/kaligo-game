@@ -83,18 +83,19 @@ namespace Kaligo
             yaw = e.y;
             pitch = NormalizePitch(e.x);
 
-            // Targeting lives on the player (parent of CameraTarget)
             targeting = GetComponentInParent<Kaligo.Combat.Targeting>();
-
-            if (lockCursor)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
+            // Cursor is now managed by CursorController; lockCursor field kept for reference.
         }
 
         private void LateUpdate()
         {
+            if (CursorController.Instance != null && CursorController.Instance.IsUIMode)
+            {
+                // Re-apply frozen rotation so parent (Player) body rotation doesn't drag camera.
+                transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+                return;
+            }
+
             if (targeting != null && targeting.IsLocked)
             {
                 TrackLockedTarget(targeting.LockedTarget);

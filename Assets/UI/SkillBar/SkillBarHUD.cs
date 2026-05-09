@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Kaligo.Skills;
+using InputSystem = UnityEngine.InputSystem;
 
 namespace Kaligo.UI
 {
@@ -10,6 +11,8 @@ namespace Kaligo.UI
     /// Visual hotbar for all skill slots.
     /// Layout (left to right): [LMB] [RMB]  gap  [1] [2] [3] [4]
     /// Reads cooldown each frame from SkillExecutor and updates the radial overlay.
+    /// In UI mode (Alt), performs direct mouse-position hover detection for the tooltip
+    /// so it works regardless of EventSystem state.
     /// </summary>
     public class SkillBarHUD : MonoBehaviour
     {
@@ -30,17 +33,30 @@ namespace Kaligo.UI
 
             [Tooltip("Mana cost label; hidden when 0.")]
             public TextMeshProUGUI manaLabel;
+
+            // Resolved on first use — parent RectTransform of iconImage is the slot root.
+            public RectTransform SlotRoot => iconImage != null
+                ? iconImage.transform.parent as RectTransform : null;
         }
 
         [SerializeField] private SlotView[]    slots;
         [SerializeField] private SkillBar      skillBar;
         [SerializeField] private SkillExecutor executor;
 
+        private Canvas canvas;
+
+        private void Awake()
+        {
+            canvas = GetComponentInParent<Canvas>();
+        }
+
         private void Update()
         {
             if (slots == null) return;
             foreach (var slot in slots)
                 RefreshSlot(slot);
+
+            UpdateTooltip();
         }
 
         private void RefreshSlot(SlotView slot)
@@ -53,8 +69,8 @@ namespace Kaligo.UI
             {
                 bool hasIcon = skill != null && skill.icon != null;
                 slot.iconImage.sprite  = hasIcon ? skill.icon : null;
-                slot.iconImage.color   = hasIcon ? Color.white : new Color(1f, 1f, 1f, 0.12f);
-                slot.iconImage.enabled = true;
+                slot.iconImage.color   = Color.white;
+                slot.iconImage.enabled = hasIcon;
             }
 
             if (slot.cooldownOverlay != null)
@@ -77,6 +93,43 @@ namespace Kaligo.UI
                     slot.manaLabel.enabled = false;
                 }
             }
+        }
+
+        private void UpdateTooltip()
+        {
+            var tooltip = SkillTooltipUI.Instance;
+            if (tooltip == null) return;
+
+            bool inUIMode = Kaligo.CursorController.Instance != null
+                         && Kaligo.CursorController.Instance.IsUIMode;
+
+            if (!inUIMode)
+            {
+                tooltip.Hide();
+                return;
+            }
+
+            Vector2 mouseScreen = InputSystem.Mouse.current != null
+                ? InputSystem.Mouse.current.position.ReadValue()
+                : Vector2.zero;
+
+            Camera uiCamera = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                ? canvas.worldCamera : null;
+
+            foreach (var slot in slots)
+            {
+                RectTransform root = slot?.SlotRoot;
+                if (root == null) continue;
+
+                if (RectTransformUtility.RectangleContainsScreenPoint(root, mouseScreen, uiCamera))
+                {
+                    SkillData skill = skillBar != null ? skillBar.GetSkill(slot.binding) : null;
+                    tooltip.Show(skill, root);
+                    return;
+                }
+            }
+
+            tooltip.Hide();
         }
     }
 }

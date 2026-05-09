@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: QuickMend
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Quick Mend
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: cfeb27009054bec489613ca64cb6cbfd, type: 3}
   cooldown: 18
   description: Channel briefly to restore 40 HP.
   staminaCost: 0

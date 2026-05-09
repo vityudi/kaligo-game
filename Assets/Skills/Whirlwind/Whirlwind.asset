@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Whirlwind
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Whirlwind
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: b7635b6f540c9f84dba540cb73b693f0, type: 3}
   cooldown: 10
   description: Spin and hit all nearby enemies in a 4.5m radius.
   staminaCost: 0

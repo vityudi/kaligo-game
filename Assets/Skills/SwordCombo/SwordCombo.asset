@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SwordCombo
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Sword Combo
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 0a118ab44bf40764cacd780280aa5010, type: 3}
   cooldown: 0
   description: A quick 3-hit combo. Press LMB during the combo window to chain the
     next strike.

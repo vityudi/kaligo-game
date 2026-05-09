@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Block
   m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Skills.SkillData
   skillName: Block
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 49e3ffb631714814fbb6f5afc0ac4478, type: 3}
   cooldown: 0
   description: Hold to raise your shield. Absorbs 80% of incoming damage. You can
     walk while blocking.
