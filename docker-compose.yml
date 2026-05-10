@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB:       kaligo_dev
+      POSTGRES_USER:     kaligo
+      POSTGRES_PASSWORD: localdev
+    ports:
+      - "5432:5432"
+    volumes:
+      - kaligo_data:/var/lib/postgresql/data
+      - ./Database/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kaligo -d kaligo_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kaligo_data:

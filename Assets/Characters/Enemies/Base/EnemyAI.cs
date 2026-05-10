@@ -43,9 +43,12 @@ namespace Kaligo.Combat
         private Transform            player;
         private SkillExecutor        playerExecutor;
 
-        private float verticalVelocity;
-        private float cooldownTimer;
-        private bool  attackInProgress;
+        private float   verticalVelocity;
+        private float   cooldownTimer;
+        private bool    attackInProgress;
+        private Vector3 knockbackVelocity;
+
+        private const float KnockbackDecay = 12f;
 
         private static readonly int SpeedHash   = Animator.StringToHash("Speed");
         private static readonly int AttackHash  = Animator.StringToHash("Attack");
@@ -80,6 +83,7 @@ namespace Kaligo.Combat
 
             UpdateState(dist);
             ApplyGravity();
+            ApplyKnockbackDecay();
             UpdateAnimator(dist);
         }
 
@@ -163,6 +167,20 @@ namespace Kaligo.Combat
                 transform.rotation,
                 Quaternion.LookRotation(dir),
                 turnSpeed * Time.deltaTime);
+        }
+
+        public void ApplyKnockback(Vector3 impulse)
+        {
+            if (state == State.Dead) return;
+            knockbackVelocity = impulse;
+        }
+
+        private void ApplyKnockbackDecay()
+        {
+            if (knockbackVelocity.sqrMagnitude < 0.01f) return;
+            controller.Move(knockbackVelocity * Time.deltaTime);
+            knockbackVelocity = Vector3.MoveTowards(knockbackVelocity, Vector3.zero,
+                KnockbackDecay * Time.deltaTime);
         }
 
         private void ApplyGravity()

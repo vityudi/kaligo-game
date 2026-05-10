@@ -127,12 +127,14 @@
 
 **What you'll learn:** Stat systems via ScriptableObjects, leveling curves, the math of progression, the design choice between "skill-based" and "gear/level-based."
 
+> **Service layer is already wired.** `IProgressionService` / `LocalProgressionService` / `DatabaseService` exist in `Assets/Services/` and `Assets/Database/`. XP and level are persisted to the local PostgreSQL instance automatically. Start the database with `docker-compose up -d` before entering Play mode.
+
 **Tasks:**
 
 - Pick a progression model (see `VISION.md` §7 — RuneScape-style skill-per-activity, Albion-style gear-tier, traditional level + stats, or hybrid).
-- Implement XP gain from defeated enemies (or per-skill activity if RuneScape-style).
-- Implement stat increases on level/skill-up.
-- Test the curve: how long to level 5? Level 10? Level 50? Plot it in a spreadsheet.
+- Implement XP gain from defeated enemies (or per-skill activity if RuneScape-style) by calling `Services.Progression.GrantXP(amount)` on enemy death.
+- Design the leveling curve in `Assets/Services/Local/XPTable.cs` — replace the placeholder quadratic with your real formula. Plot it in a spreadsheet first.
+- Implement stat increases on level/skill-up via `IProgressionService.OnLevelUp` event.
 - New abilities or stat boosts unlock at thresholds.
 
 **Exit criterion:** Defeating an enemy gives a small dopamine hit because of the progression bar filling. You can describe your progression curve in one sentence.
@@ -147,10 +149,12 @@
 
 **What you'll learn:** ScriptableObjects for items, equipment slots, stat modifiers, drop tables, drag-and-drop UI in uGUI.
 
+> **Service layer is already wired.** `IInventoryService` / `LocalInventoryService` persist inventory rows to PostgreSQL. Call `Services.Inventory.Add(itemId)` on loot pickup and `Services.Inventory.Equip(rowId, slot)` from the UI. Equipment slots are defined as a PostgreSQL enum in `Database/migrations/002_inventory.sql`.
+
 **Tasks:**
 
 - `ItemData` ScriptableObject: name, model prefab, icon, stats, equipment slot, rarity.
-- Equipment slots: weapon, off-hand, helmet, chest, legs, boots, two rings.
+- Equipment slots already defined: Weapon, OffHand, Helmet, Chest, Legs, Boots, Ring1, Ring2 — matches the `equipment_slot` DB enum.
 - Inventory screen with drag-and-drop equip.
 - Loot drops from enemies (drop tables with rarity weights).
 - Equipped gear visible on the character model (at least weapon and chest — use **socket** GameObjects on the rig as parent points).
@@ -167,12 +171,14 @@
 
 **What you'll learn:** NPC behavior with simple state machines or **NavMesh** patrol, dialogue trees, quest state management, narrative as a delivery vehicle for content.
 
+> **Service layer is already wired.** `IQuestService` / `LocalQuestService` persist quest flags to PostgreSQL using upsert. Call `Services.Quest.SetState("questId", QuestState.InProgress)` to start a quest and `QuestState.Complete` to finish it. State survives restarts automatically.
+
 **Tasks:**
 
 - An NPC standing in the world. They have a name and a problem.
 - Dialogue UI with branching choices, typewriter text. Consider **Yarn Spinner** or **Ink** (both free Unity-friendly dialogue tools) once your needs grow past a custom system.
-- A quest: NPC asks for something → player goes elsewhere, fights an enemy or finds an item → returns and resolves it. Rewards XP and loot.
-- A quest log UI.
+- A quest: NPC asks for something → player goes elsewhere, fights an enemy or finds an item → returns and resolves it. Rewards XP and loot via `Services.Progression.GrantXP` and `Services.Inventory.Add`.
+- A quest log UI driven by `Services.Quest.GetState(questId)`.
 
 **Exit criterion:** A stranger could play through the quest start-to-finish without you in the room.
 
@@ -184,18 +190,22 @@
 
 **Goal:** Save and load. The world remembers.
 
-**What you'll learn:** Serialization in C# (JSON via `JsonUtility` or **Newtonsoft.Json**), what state actually needs to persist (and what doesn't), file IO with `Application.persistentDataPath`. **Do not use `PlayerPrefs` for save data** — it's for settings only.
+**What you'll learn:** PostgreSQL schema design for game state, what actually needs to persist (and what doesn't), wiring a title screen to a real database. The foundation built here is the same one Act II uses in production — this is not throwaway work.
+
+> **The database is already running.** PostgreSQL via Docker, all migrations applied. `Bootstrap.cs` connects on startup. Services write to the DB on every state change — persistence is already happening passively. This phase is about surfacing it to the player with a proper title screen and character flow.
 
 **Tasks:**
 
 - Title screen with New Game / Continue / Quit.
-- Save on rest at specific points (campfires, inns) — not anywhere; that comes free with full MMO.
-- Persist: position, stats, XP, inventory, equipment, quest flags, defeated unique enemies, opened chests.
-- Load on Continue, world reflects all saved state.
+  - New Game: create a `characters` row, store the UUID in `PlayerPrefs` as `ActiveCharacterId`, load the game scene.
+  - Continue: read `ActiveCharacterId`, call `Services.Initialize(db, id)`, load the game scene.
+- Save position on rest (campfire, inn): `UPDATE characters SET pos_x/y/z WHERE id = @id`.
+- The rest — XP, inventory, quest flags, cooldowns — is already written live by the service layer. No explicit save step needed.
+- Defeated unique enemies / opened chests: add a `world_flags` table (`character_id`, `flag_id`, `value`) following the same pattern as `quest_flags`.
 
 **Exit criterion:** Quit, reopen, Continue — find the world exactly as you left it.
 
-**Estimated time:** 2 weeks.
+**Estimated time:** 1–2 weeks (persistence is already wired; this phase is mostly UI and the character-select flow).
 
 ---
 
@@ -276,14 +286,16 @@
 
 **Goal:** A real persistent server you can leave running.
 
-**What you'll learn:** **PostgreSQL** schema design for game state, account/session management, cloud hosting (a small VPS to start: Hetzner, DigitalOcean, Linode), zone/region partitioning.
+**What you'll learn:** Account/session management, cloud hosting (a small VPS to start: Hetzner, DigitalOcean, Linode), zone/region partitioning.
+
+> **The schema is already designed and battle-tested.** `Database/migrations/` contains the exact SQL that runs in production. The C# row types and Dapper queries in `Services/Local/` work unchanged against a cloud PostgreSQL instance — only the connection string changes.
 
 **Tasks:**
 
-- Postgres database for accounts, characters, inventories, world state. Connect from C# via **Npgsql** or a lightweight ORM.
-- Account creation and login flow (server-side hashing — `BCrypt.Net-Next` is the standard NuGet package).
-- Headless Unity server runs 24/7 on a cheap cloud VPS.
-- Players can log out and log back in with state preserved server-side.
+- Provision a cloud PostgreSQL instance (Supabase free tier, Railway, or a self-hosted VPS). Run the same migration files.
+- Add accounts table + login flow (server-side hashing — `BCrypt.Net-Next`). Characters are now per-account, not per-device.
+- Implement `Services/Networked/` implementations (stubs since Phase 4). Each method sends a server RPC instead of writing the DB directly; the server runs the same Dapper queries.
+- Headless Unity server runs 24/7 on the VPS.
 - Basic logging and crash recovery.
 
 **Exit criterion:** You and 3–5 friends can play on the same persistent server for a week and the world remembers everyone.
@@ -356,17 +368,19 @@ Resources worth bookmarking now and revisiting at the right phase:
     - [x] 3D — Player HUD (HP bar + stamina bar)
     - [x] 3E — Lock-on targeting (Tab toggle, second Cinemachine vcam, strafe-relative movement)
     - [x] 3F — Game-feel pass (hit-stop, Cinemachine Impulse shake, hit particles + SFX, knockback)
-- [ ] **Phase 4 — Combat Depth** ← in progress
+- [x] **Phase 4 — Combat Depth**
     - [x] 4A — ManaSystem (100 mana, 5/s regen after 2s delay), manaCost on SkillData, per-skill independent cooldown tracking, mana bar in HUD
     - [x] 4B — New skill effects: DashStrikeEffect (gap-closer), AOESwingEffect (radius damage), DefensiveBuffEffect (timed DR), HealEffect
     - [x] 4C — Skill bar hotbar UI (4 slots, radial cooldown overlay, key hints, mana cost labels)
     - [x] 4D — 4 active skills on Key1-4: Dash Strike (20mp,6s), Whirlwind AOE (35mp,10s), Iron Skin buff (30mp,14s), Quick Mend heal (45mp,18s)
     - [x] 4E — Second enemy type: ShieldedEnemy (75% DR always, breaks on heavy hit for 3s stagger window)
-- [ ] Phase 5 — Progression
+- [ ] **Phase 5 — Progression** ← next
 - [ ] Phase 6 — Inventory & Equipment
 - [ ] Phase 7 — NPCs, Dialogue, Quest
 - [ ] Phase 8 — Persistence
 - [ ] Phase 9 — Vertical Slice
+
+> **Infrastructure (cross-phase, done):** PostgreSQL via Docker, Npgsql + Dapper, service layer skeleton (`IProgressionService`, `IInventoryService`, `IQuestService`), `DatabaseService`, `Bootstrap`, migrations for all tables. See `VISION.md §3a` and `docker-compose.yml`.
 
 ### Act II — Networked & MMO
 

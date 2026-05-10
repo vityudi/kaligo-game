@@ -1,7 +1,7 @@
 # Game Vision — Kaligo
 
 > A living brainstorm document. We'll keep filling this in as the concept sharpens.
-> Last updated: 2026-05-08
+> Last updated: 2026-05-09
 
 ---
 
@@ -82,6 +82,53 @@ Why Unity is the right pick for this project:
 - **Mixamo** — free humanoid animations to drop on our characters.
 - **Synty / Quaternius / Kenney** — placeholder and possibly final low-poly art.
 - **Git** + **Git LFS** — version control. LFS is non-negotiable for a Unity project.
+- **PostgreSQL 16** (via Docker) — persistence layer from Phase 8 onward; same engine used in Act II production.
+- **Docker + docker-compose** — local database dev environment (`docker-compose up` starts a Postgres instance with migrations auto-applied).
+- **Npgsql** — official PostgreSQL driver for .NET/C#; installed via NuGetForUnity.
+- **Dapper** — lightweight SQL micro-ORM on top of Npgsql; plain SQL, minimal abstraction.
+
+---
+
+## 3a. Data Layer & Service Architecture
+
+Decided early to avoid a painful Act I → Act II migration. Two structural choices locked in before Phase 5:
+
+**PostgreSQL from day one (not SQLite).**
+Running Postgres locally via Docker means the schema designed in Act I is the exact schema Act II uses in production. No type-system translation, no migration tool divergence. Switching from local to production is a one-line connection string change.
+
+**Service layer pattern.**
+All game-state mutations go through service interfaces (`IProgressionService`, `IInventoryService`, `IQuestService`). Act I uses local implementations backed by the local Postgres instance. Act II replaces them with networked implementations (server RPCs) without touching any gameplay code:
+
+```
+Services.Initialize(db, characterId, networked: false)  ← Act I
+Services.Initialize(db, characterId, networked: true)   ← Act II (Phase 10+)
+```
+
+Gameplay code never calls the database directly — it always calls a service:
+
+```csharp
+Services.Progression.GrantXP(150);
+Services.Inventory.Add("IronSword");
+Services.Quest.SetState("find_the_cave", QuestState.Complete);
+```
+
+File layout:
+
+```
+Assets/
+├── Database/
+│   ├── DatabaseService.cs        ← Npgsql connection wrapper
+│   └── Schema/                   ← Row types matching DB tables
+├── Services/
+│   ├── I*Service.cs              ← Interfaces (never change between acts)
+│   ├── Services.cs               ← Service locator / initializer
+│   ├── Local/                    ← Act I implementations (Dapper → local Postgres)
+│   └── Networked/                ← Act II implementations (stubs until Phase 10)
+Database/
+├── migrations/                   ← SQL files run by docker-entrypoint-initdb.d
+└── seed/                         ← Dev seed data
+docker-compose.yml                ← One command to start local Postgres
+```
 
 ---
 

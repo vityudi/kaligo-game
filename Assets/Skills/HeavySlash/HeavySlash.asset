@@ -35,3 +35,4 @@ MonoBehaviour:
       type: {class: HitboxEffect, ns: Kaligo.Skills.Effects, asm: Assembly-CSharp}
       data:
         damage: 40
+        isHeavyAttack: 1
