@@ -36,6 +36,7 @@ namespace Kaligo.Combat
             if (health != null)
             {
                 health.OnHealthChanged += OnHealthChanged;
+                health.OnDeath         += () => gameObject.SetActive(false);
                 // Initialise fill to current health fraction
                 OnHealthChanged(health.CurrentHealth, health.MaxHealth);
             }

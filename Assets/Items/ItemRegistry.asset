@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c8e65f6b58c16748b05f39b9400be1f, type: 3}
+  m_Name: ItemRegistry
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Items.ItemRegistry
+  items:
+  - {fileID: 11400000, guid: d15643fc6b90475b9a3207057f417f32, type: 3}
+  - {fileID: 11400000, guid: 3189ff5e9440482185fc91b04ac9cf1f, type: 3}
+  - {fileID: 11400000, guid: 25d746b577784a858435f335a38715c2, type: 3}

@@ -14,7 +14,14 @@ namespace Kaligo.Services.Local {
         public event Action<int> OnXPChanged;
 
         public LocalProgressionService(DatabaseService db, Guid characterId) {
-            _db        = db;
+            _db = db;
+            // INSERT the row if this character ID has never been saved before,
+            // then SELECT it — handles both fresh sessions and returning players.
+            db.Execute(
+                @"INSERT INTO characters (id, name, level, xp)
+                  VALUES (@Id, 'Hero', 1, 0)
+                  ON CONFLICT (id) DO NOTHING",
+                new { Id = characterId });
             _character = db.QueryFirst<CharacterRow>(
                 "SELECT * FROM characters WHERE id = @Id", new { Id = characterId });
         }

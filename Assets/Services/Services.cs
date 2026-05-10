@@ -19,6 +19,17 @@ namespace Kaligo.Services {
             Quest       = new LocalQuestService(db, characterId);
         }
 
+        /// <summary>
+        /// Fallback used when the database is unreachable.
+        /// All state is in-memory only — nothing is persisted across sessions.
+        /// </summary>
+        public static void InitializeOffline() {
+            Progression = new OfflineProgressionService();
+            Inventory   = new OfflineInventoryService();
+            // Quest service requires DB; leave null in offline mode.
+            Quest = null;
+        }
+
         public static void Dispose() { }
     }
 }

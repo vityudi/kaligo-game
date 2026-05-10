@@ -381,7 +381,16 @@ Resources worth bookmarking now and revisiting at the right phase:
     - [x] 5D — Damage multiplier: HitboxController.Enable applies PlayerStats.DamageMultiplier to outgoing damage
     - [x] 5E — XP bar + level label HUD (XP_Fill, LevelLabel under HUDPanel), wired to PlayerHUD
     - [x] 5F — LevelUpNotification panel (fades in/out on level-up event)
-- [ ] Phase 6 — Inventory & Equipment
+- [x] **Phase 6 — Inventory & Equipment**
+    - [x] 6A — `ItemRarity` enum, `EquipmentSlot` enum, `ItemData` ScriptableObject (id, name, description, icon, modelPrefab, slot, rarity, stat bonuses, stackable)
+    - [x] 6B — `ItemRegistry` ScriptableObject (lookup by itemId); Bootstrap registers singleton at startup
+    - [x] 6C — `LootTable` ScriptableObject (weighted entries, rollCount, dropChance); `LootDrop` component (subscribes to HealthSystem.OnDeath, rolls table, spawns pickups); `LootPickup` (trigger collider, floating label, rarity colour, `+Item` float text on pickup, calls Services.Inventory.Add)
+    - [x] 6D — `EquipmentManager` component on player (subscribes to Inventory.OnChanged; sums HP/mana/damage bonuses; manages Weapon + Chest + optional sockets — instantiates item modelPrefab in socket on equip, destroys on unequip)
+    - [x] 6E — `PlayerStats` updated: `RefreshStats()` public method; `ApplyStatsForLevel` layers EquipmentManager bonuses on top of level scaling
+    - [x] 6F — Inventory UI (press I): bag grid (6×5), equipment panel (8 slots with correct positions), drag-and-drop equip, double-click equip/unequip, right-click unequip, hover tooltip, stat preview panel
+    - [x] 6G — Item assets: Gold (Common, stackable 1-10, 9999 max stack), Rusty Sword (Uncommon, Weapon, +12% damage), Cloth Armor (Common, Chest, +20 HP +5 Mana); ItemRegistry asset wiring all three
+    - [x] 6H — LootTable assets: BasicEnemyLootTable (85% drop, Gold×1-10 weight 10 / Rusty Sword weight 1), ShieldedEnemyLootTable (100% drop, 2 rolls, Gold×3-15 / Rusty Sword / Cloth Armor)
+    - [x] 6I — Scene wired: Bootstrap GO added (ItemRegistry assigned); EquipmentManager on Player (ItemRegistry assigned); InventoryUI on HUD Canvas (ItemRegistry assigned, toggleKey=I); LootDrop on Enemy (BasicEnemyLootTable); LootDrop on ShieldedEnemy (ShieldedEnemyLootTable)
 - [ ] Phase 7 — NPCs, Dialogue, Quest
 - [ ] Phase 8 — Persistence
 - [ ] Phase 9 — Vertical Slice

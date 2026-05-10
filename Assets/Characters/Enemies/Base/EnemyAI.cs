@@ -1,5 +1,8 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
+using Kaligo.Items;
 using Kaligo.Skills;
 using Kaligo.Services;
 
@@ -26,7 +29,19 @@ namespace Kaligo.Combat
         [SerializeField] private float gravity    = -20f;
 
         [Header("Rewards")]
-        [SerializeField] private int xpReward = 75;
+        [SerializeField] private int       xpReward  = 75;
+        [SerializeField] private LootTable lootTable;
+
+        // Auto-assign BasicEnemyLootTable in the Editor so the field is
+        // never accidentally left blank after a recompile.
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (lootTable == null)
+                lootTable = UnityEditor.AssetDatabase.LoadAssetAtPath<LootTable>(
+                    "Assets/Items/LootTables/BasicEnemyLootTable.asset");
+        }
+#endif
 
         [Header("Attack")]
         [SerializeField] private float damage           = 15f;
@@ -219,8 +234,94 @@ namespace Kaligo.Combat
             animator.SetBool(IsDeadHash, true);
             controller.enabled = false;
 
+            // Freeze any Rigidbodies so the body doesn't fall through the floor
+            foreach (var rb in GetComponentsInChildren<Rigidbody>())
+                rb.isKinematic = true;
+
+            // Grant XP
             if (xpReward > 0 && GameServices.Progression != null)
+            {
                 GameServices.Progression.GrantXP(xpReward);
+                SpawnXPFeedback();
+            }
+
+            // Resolve loot table: Inspector field → Resources folder → nothing.
+            var resolvedTable = lootTable
+                ?? Resources.Load<LootTable>("BasicEnemyLootTable");
+
+            if (resolvedTable == null)
+                Debug.LogWarning($"[EnemyAI] {name}: no LootTable found — body will be empty.");
+
+            var drops = resolvedTable != null
+                ? resolvedTable.Roll()
+                : new List<(ItemData, int)>();
+
+            Debug.Log($"[EnemyAI] {name}: loot roll → {drops.Count} item(s).");
+
+            var container = gameObject.AddComponent<LootContainer>();
+            container.Initialize(drops);
+
+            StartCoroutine(DeathFallRoutine());
+        }
+
+        /// <summary>
+        /// Lets the death clip start, then disables the Animator and smoothly
+        /// rotates the body to lie flat on the ground.
+        /// The Y position is locked throughout so the body never sinks below
+        /// the surface regardless of physics settings.
+        /// </summary>
+        private IEnumerator DeathFallRoutine()
+        {
+            // Give the death animation a moment to begin
+            yield return new WaitForSeconds(0.55f);
+
+            animator.enabled = false;
+
+            // Record ground-level Y so the body can't drift underground
+            float groundY = transform.position.y;
+
+            const float duration = 0.55f;
+            float elapsed = 0f;
+
+            Quaternion startRot = transform.rotation;
+            // Fall to the right relative to the character's facing direction
+            Quaternion endRot   = transform.rotation * Quaternion.Euler(0f, 0f, -90f);
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t  = Mathf.SmoothStep(0f, 1f, elapsed / duration);
+                transform.rotation = Quaternion.Lerp(startRot, endRot, t);
+
+                // Keep the body glued to the surface
+                var pos = transform.position;
+                pos.y = groundY;
+                transform.position = pos;
+
+                yield return null;
+            }
+            transform.rotation = endRot;
+
+            // Final snap — ensure nothing slipped
+            var finalPos = transform.position;
+            finalPos.y   = groundY;
+            transform.position = finalPos;
+        }
+
+        // ── XP feedback ───────────────────────────────────────────────────────
+
+        private void SpawnXPFeedback()
+        {
+            var go = new GameObject("XPFeedback");
+            go.transform.position = transform.position + Vector3.up * 2.8f;
+            var tmp          = go.AddComponent<TextMeshPro>();
+            tmp.text         = $"+{xpReward} XP";
+            tmp.color        = new Color(0.4f, 1f, 0.4f);
+            tmp.fontSize     = 5f;
+            tmp.alignment    = TextAlignmentOptions.Center;
+            tmp.fontStyle    = FontStyles.Bold;
+            tmp.sortingOrder = 10;
+            go.AddComponent<XPFeedbackFloat>();
         }
 
         // ── Editor gizmos ─────────────────────────────────────────────────────
@@ -231,6 +332,32 @@ namespace Kaligo.Combat
             Gizmos.DrawWireSphere(transform.position, detectionRange);
             Gizmos.color = Color.red;
             Gizmos.DrawWireSphere(transform.position, attackRange);
+        }
+    }
+
+    // ── Floating XP feedback ───────────────────────────────────────────────────
+
+    internal class XPFeedbackFloat : MonoBehaviour
+    {
+        private TextMeshPro _tmp;
+        private float       _t;
+        private const float Duration = 2.0f;
+        private const float Speed    = 0.9f;
+
+        private void Awake() => _tmp = GetComponent<TextMeshPro>();
+
+        private void Update()
+        {
+            _t += Time.deltaTime;
+            transform.position += Vector3.up * Speed * Time.deltaTime;
+
+            if (Camera.main != null)
+                transform.rotation = Camera.main.transform.rotation;
+
+            float alpha = Mathf.Clamp01(1f - _t / Duration);
+            _tmp.color = new Color(_tmp.color.r, _tmp.color.g, _tmp.color.b, alpha);
+
+            if (_t >= Duration) Destroy(gameObject);
         }
     }
 }
