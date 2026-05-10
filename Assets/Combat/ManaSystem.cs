@@ -28,6 +28,14 @@ namespace Kaligo.Combat
             }
         }
 
+        public void SetMaxMana(float newMax)
+        {
+            float ratio = maxMana > 0f ? CurrentMana / maxMana : 1f;
+            maxMana     = Mathf.Max(1f, newMax);
+            CurrentMana = maxMana * ratio;
+            OnManaChanged?.Invoke(CurrentMana, maxMana);
+        }
+
         public bool TrySpend(float amount)
         {
             if (CurrentMana < amount) return false;

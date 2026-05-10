@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using Kaligo.Skills;
+using Kaligo.Services;
 
 namespace Kaligo.Combat
 {
@@ -23,6 +24,9 @@ namespace Kaligo.Combat
         [SerializeField] private float moveSpeed  = 3.5f;
         [SerializeField] private float turnSpeed  = 360f;
         [SerializeField] private float gravity    = -20f;
+
+        [Header("Rewards")]
+        [SerializeField] private int xpReward = 75;
 
         [Header("Attack")]
         [SerializeField] private float damage           = 15f;
@@ -214,6 +218,9 @@ namespace Kaligo.Combat
             StopAllCoroutines();
             animator.SetBool(IsDeadHash, true);
             controller.enabled = false;
+
+            if (xpReward > 0 && GameServices.Progression != null)
+                GameServices.Progression.GrantXP(xpReward);
         }
 
         // ── Editor gizmos ─────────────────────────────────────────────────────

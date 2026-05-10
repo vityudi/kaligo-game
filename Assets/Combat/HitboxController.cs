@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Kaligo.Characters;
 
 namespace Kaligo.Combat
 {
@@ -62,7 +63,8 @@ namespace Kaligo.Combat
 
         public void Enable(float damage, bool isHeavy = false)
         {
-            currentDamage  = damage;
+            float multiplier = PlayerStats.Instance != null ? PlayerStats.Instance.DamageMultiplier : 1f;
+            currentDamage  = damage * multiplier;
             currentIsHeavy = isHeavy;
             hitThisSwing.Clear();
             hitCollider.enabled = true;

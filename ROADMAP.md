@@ -374,7 +374,13 @@ Resources worth bookmarking now and revisiting at the right phase:
     - [x] 4C — Skill bar hotbar UI (4 slots, radial cooldown overlay, key hints, mana cost labels)
     - [x] 4D — 4 active skills on Key1-4: Dash Strike (20mp,6s), Whirlwind AOE (35mp,10s), Iron Skin buff (30mp,14s), Quick Mend heal (45mp,18s)
     - [x] 4E — Second enemy type: ShieldedEnemy (75% DR always, breaks on heavy hit for 3s stagger window)
-- [ ] **Phase 5 — Progression** ← next
+- [x] **Phase 5 — Progression**
+    - [x] 5A — XPTable: real leveling curve (floor(100 * n^1.85)), LevelProgress helper
+    - [x] 5B — XP on kill: EnemyAI.xpReward (75 basic / 150 shielded), calls GameServices.Progression.GrantXP on death
+    - [x] 5C — Stat scaling: PlayerStats component (+15 HP/level, +10 mana/level, +5% damage/level), SetMaxHealth/SetMaxMana on HealthSystem/ManaSystem
+    - [x] 5D — Damage multiplier: HitboxController.Enable applies PlayerStats.DamageMultiplier to outgoing damage
+    - [x] 5E — XP bar + level label HUD (XP_Fill, LevelLabel under HUDPanel), wired to PlayerHUD
+    - [x] 5F — LevelUpNotification panel (fades in/out on level-up event)
 - [ ] Phase 6 — Inventory & Equipment
 - [ ] Phase 7 — NPCs, Dialogue, Quest
 - [ ] Phase 8 — Persistence

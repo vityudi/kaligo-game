@@ -23,6 +23,14 @@ namespace Kaligo.Combat
 
         public void SetBlockReduction(float reduction) => blockDamageReduction = Mathf.Clamp01(reduction);
 
+        public void SetMaxHealth(float newMax)
+        {
+            float ratio = maxHealth > 0f ? CurrentHealth / maxHealth : 1f;
+            maxHealth     = Mathf.Max(1f, newMax);
+            CurrentHealth = maxHealth * ratio;
+            OnHealthChanged?.Invoke(CurrentHealth, maxHealth);
+        }
+
         public void TakeDamage(float amount)
         {
             if (IsDead) return;
