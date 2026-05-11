@@ -59,9 +59,29 @@ docker-compose down -v      # nuke data and start fresh
 
 Connection string (local): `Host=localhost;Port=5432;Database=kaligo_dev;Username=kaligo;Password=localdev`
 
+## Quick-Start: Building the Open World (Phase 7)
+
+> **Architecture decision:** Kaligo is open world — one seamless scene with no loading screens between areas. The village, meadow, and dark forest are all contiguous. When the MMO server arrives (Act II), it will use spatial partitioning on the same world — no client changes needed.
+
+After opening the project in Unity, run these steps in order:
+
+1. **Kaligo → World → Create Area Definitions** — creates 3 AreaDefinition assets under `Assets/World/Data/`
+2. **Kaligo → World → Create All Mob Definitions** — creates 7 MobDefinition assets under `Assets/Characters/Mobs/Data/`
+3. **Kaligo → World → Build Open World Scene** — builds `Assets/Scenes/World_Kaligo.unity` with village, meadow, and forest in one scene
+4. **File → Build Settings** → add `World_Kaligo` (it's the only scene needed)
+5. Open `World_Kaligo.unity`, press Play — walk north to enter the forest, south to reach the meadow
+
+To adjust creature stats: select any asset under `Assets/Characters/Mobs/Data/` and tweak fields in the Inspector.
+To add a new creature: create a MobDefinition asset, drop a MobSpawner anywhere in `World_Kaligo`, assign the definition.
+To add a new area: create an AreaDefinition, add a BoxCollider trigger with `AreaTrigger` component pointing to it.
+
+> **Dungeons and instances** still use separate scenes loaded via `ZonePortal` + `ZoneTransitionManager` — these files are preserved for that purpose. Open-world outdoor areas never need a scene load.
+
+---
+
 ## Status
 
-**Currently in:** Phase 5 — Progression (not started).
+**Currently in:** Phase 7 — World & Creatures (in progress).
 
 ### Sitting-level progress
 
@@ -88,19 +108,42 @@ Connection string (local): `Host=localhost;Port=5432;Database=kaligo_dev;Usernam
     - [x] **4D — 4 active skills.** Dash Strike (20mp, 6s), Whirlwind AOE (35mp, 10s), Iron Skin buff (30mp, 14s), Quick Mend heal (45mp, 18s).
     - [x] **4E — ShieldedEnemy.** 75% DR always-on; breaks on heavy hit for a 3s stagger window.
 
+- [x] **Phase 6 — Inventory & Equipment.** Shipped.
+    - [x] **6A — ItemData SO.** `ItemRarity` enum, `EquipmentSlot` enum, `ItemData` ScriptableObject (id, name, description, icon, modelPrefab, slot, rarity, stat bonuses, stackable).
+    - [x] **6B — ItemRegistry.** ScriptableObject (lookup by itemId); Bootstrap registers singleton at startup.
+    - [x] **6C — Loot system.** `LootTable` ScriptableObject (weighted entries, rollCount, dropChance); `LootDrop` (subscribes to HealthSystem.OnDeath, rolls table, creates LootContainer); `LootPickup` (trigger collider, floating label, rarity colour, `+Item` float text on pickup).
+- [ ] **Phase 7 — World & Creatures** *(current)*
+    - [x] **7A — Mob architecture.** `MobDefinition` SO, `MobBrain` abstract base, `PassiveMobBrain`, `AggressiveMobBrain`, `MobFactory`, `MobSpawner`.
+    - [x] **7B — Open world architecture.** Single seamless scene (`World_Kaligo.unity`). `AreaDefinition` SO, `AreaTrigger`, `AtmosphereManager`, `PlayerSpawnPoint`, `SafeZone`. No loading screens between village, meadow, and forest.
+    - [x] **7C — Editor tools.** `MobDataCreator`, `OpenWorldSceneBuilder` (Kaligo → World menu). One-click full scene rebuild: terrain, village buildings, vegetation, treeline corridors, area triggers, 13 mob spawners, player rig, HUD canvas.
+    - [x] **7D — Scene built.** `World_Kaligo.unity` builds cleanly. X Bot player with `PlayerController`, `SkillExecutor`, `SkillBar`, full HUD (HP/Stamina/Mana bars, XP bar, 8-slot skill hotbar centred at screen bottom), camera orbit. Skills: LMB = SwordCombo, RMB = Block, Space = Jump, 1 = Dodge, 2 = DashStrike, 3 = Whirlwind, 4 = IronSkin, 5 = QuickMend. 13 mob spawners across Meadow and Forest.
+    - [ ] **7E — Fix combat feel.** Player attack animations need tuning; hitbox timing vs. mob AI needs calibration so fights feel responsive and fair.
+    - [ ] **7F — Mob loot tables.** Assign `LootTable` assets to each `MobDefinition`. Each creature should drop appropriate items (material drops, gear, gold). Wire `LootDrop` through `MobBrain` so it fires on mob death.
+    - [ ] **7G — Fix looting system.** Verify `LootDrop` fires correctly on mob death in open world; loot container spawns at correct world position; interact prompt appears; `LootWindowUI` opens and transfers items to inventory.
+
 ### Picking up in a new session
 
-Read this Status section. Run `docker-compose up -d` before entering Play mode (database must be running). The next sitting is **Phase 5 — Progression**: pick a progression model (see `VISION.md §7`), implement XP gain from enemy deaths via `Services.Progression.GrantXP(amount)`, and design the leveling curve in `Assets/Services/Local/XPTable.cs`.
+Read this Status section. Run `docker-compose up -d` before entering Play mode (database must be running).
 
-Key architecture decisions already locked in:
+**For Phase 7** — scene builder is ready. In Unity, run:
+1. **Kaligo → World → Create Area Definitions**
+2. **Kaligo → World → Create All Mob Definitions**
+3. **Kaligo → World → Build Open World Scene**
+
+Then open `World_Kaligo.unity` and enter Play mode.
+
+**Immediate next tasks (7E–7G):**
+- Fix combat feel — attack animation timing, hitbox calibration, mob reaction to hits
+- Assign `LootTable` assets to all 7 `MobDefinition` assets (`Assets/Characters/Mobs/Data/`)
+- Fix looting — `LootDrop` → loot container world position → `LootWindowUI` → inventory transfer
+
+Key architecture decisions locked in:
 - **Everything is a skill.** Attacks, block, jump, dodge are all `SkillData` assets. New abilities = new ScriptableObjects dropped into `Assets/Data/Skills/`.
 - **Root motion rotation during attacks only.** `PlayerController.OnAnimatorMove` applies `animator.deltaRotation` when `SkillExecutor.LockRotation` is true. Character snaps to camera-forward at attack start, then root motion plays the animation's baked spin naturally.
 - **2D locomotion blend.** `VelocityX` / `VelocityZ` normalized to `runSpeed`. `FreeformDirectional2D` handles walk/run in the same direction correctly (unlike `SimpleDirectional2D`).
 - **Service layer + PostgreSQL.** All game-state mutations go through `Services.Progression`, `Services.Inventory`, `Services.Quest`. Backed by local PostgreSQL (Docker) in Act I; swapped for networked implementations in Act II with a one-line change in `Bootstrap.cs`. See `VISION.md §3a`.
-
-Open design questions still parked in `VISION.md` §7:
-- Open world vs. zoned regions?
-- Progression model? *(Phase 5 — decide before implementing XP)*
+- **Mobs are data, not code.** Adding a new creature = creating one `MobDefinition` ScriptableObject and dropping a `MobSpawner` in the scene. No code changes required.
+- **Zones are scenes.** Each area is a Unity scene. `ZonePortal` triggers async scene transitions. `ZoneTransitionManager` (DontDestroyOnLoad) owns the fade and spawn logic.
 
 ## How we're working
 

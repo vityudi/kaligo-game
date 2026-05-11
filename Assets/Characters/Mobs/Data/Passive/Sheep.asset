@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23cff4a24ec9cbe46acd3039e73dfe38, type: 3}
+  m_Name: Sheep
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Mobs.MobDefinition
+  mobId: sheep
+  displayName: Sheep
+  type: 0
+  maxHealth: 40
+  moveSpeed: 2.5
+  turnSpeed: 300
+  wanderRadius: 10
+  wanderDuration: 5
+  wanderPauseDuration: 4
+  fleeDetectionRange: 7
+  fleeSpeedMultiplier: 1.5
+  fleeUntilDistance: 15
+  detectionRange: 12
+  attackRange: 2
+  damage: 15
+  attackCooldown: 2.5
+  attackDuration: 2.33
+  damageAtNormalized: 0.45
+  fleeAtHpFraction: 0
+  alertsNearby: 0
+  alertRadius: 15
+  xpReward: 0
+  lootTable: {fileID: 0}
+  placeholderColor: {r: 0.9, g: 0.9, b: 0.9, a: 1}
+  placeholderHeight: 1.1
+  placeholderRadius: 0.35

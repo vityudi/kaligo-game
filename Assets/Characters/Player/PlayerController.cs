@@ -37,7 +37,7 @@ namespace Kaligo
         [SerializeField] private float runSpeed = 12f;
 
         [Tooltip("How fast horizontal velocity changes (m/s²). Higher = snappier; lower = floatier.")]
-        [SerializeField] private float acceleration = 20f;
+        [SerializeField] private float acceleration = 80f;
 
         [Tooltip("How fast the character rotates to face the movement direction (degrees/sec).")]
         [SerializeField] private float turnSpeedDegPerSec = 720f;

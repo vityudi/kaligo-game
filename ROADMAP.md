@@ -1,8 +1,10 @@
 # Roadmap — Kaligo
 
-> Learning-first milestones, staged from "Unity Hello World" to "persistent MMO." Each phase has a **goal**, **what you'll learn**, and an **exit criterion** — a concrete thing that, when working, means you can move on.
+> Full-game milestones, staged from "install Unity" to "persistent MMO." Each phase has a **goal**, **what you'll learn**, and an **exit criterion** — a concrete thing that, when working, means you can move on.
 >
-> Read `VISION.md` §2 first. The roadmap is split into two acts: **Act I — the single-player action RPG** (Phases 0–9), and **Act II — networked & MMO** (Phases 10–13). Act I is the actual game, played by one person. Act II layers networking onto something already fun.
+> Read `VISION.md` §2 first. The roadmap is split into two acts: **Act I — the single-player action RPG** (Phases 0–10), and **Act II — networked & MMO** (Phases 11–14). Act I is the actual game, played by one person. Act II layers networking onto something already fun.
+>
+> **Ambition level:** We are building a full RPG game — not a prototype. Early phases start small but every decision is made with the complete game in mind. Art is placeholder; architecture is not.
 >
 > Time estimates assume evenings and weekends. Halve them if you go full-time, double them if life intrudes. **Be skeptical of all estimates.** Solo MMORPG-class projects routinely take many years — that's a feature of the genre, not a failure on your part.
 
@@ -165,7 +167,81 @@
 
 ---
 
-## Phase 7 — NPCs, Dialogue, and a Quest
+## Phase 7 — World & Creatures
+
+**Goal:** A real world to inhabit — a village, multiple zones, and a full cast of creatures with distinct behaviour.
+
+**What you'll learn:** Scalable mob AI architecture (data-driven ScriptableObjects + abstract base class), passive vs. aggressive AI state machines, pack behaviour, zone-based scene management, async scene transitions, spawn/respawn systems, world composition with placeholder geometry.
+
+> **Ambition checkpoint.** We are done with the "proof of concept" scene. Every design decision from here forward is made as if the game will actually ship. Art remains placeholder; architecture is permanent.
+
+**Tasks:**
+
+**Mob system:**
+- `MobDefinition` ScriptableObject — all creature data in one asset (stats, AI tuning, rewards, placeholder visual). Adding a new creature = creating one asset.
+- `MobBrain` abstract base — gravity, knockback, health wiring, XP grant on death, corpse despawn.
+- `PassiveMobBrain` — Idle → Wander → Flee state machine. Flees on proximity or any hit.
+- `AggressiveMobBrain` — Idle → Chase → Attack state machine. Optional flee at low HP. Pack-alert pulse (wolves).
+- `MobFactory` — builds runtime GameObjects from MobDefinition data (no prefab required at this stage).
+- `MobSpawner` — drop in scene, assign definition, set count/radius/respawn delay. Tracks deaths, auto-respawns.
+- Run **Kaligo → World → Create All Mob Definitions** to generate the 7 creature assets.
+
+**Creature roster:**
+
+*Passive (safe zones and meadows):*
+- **Deer** — grazes, bolts fast, gives no XP. Teaches: the world is alive before combat.
+- **Chicken** — tiny, skittish, wanders in tight circles.
+- **Sheep** — slow, grazes in the same area, herds loosely.
+
+*Aggressive (wilderness and danger zones):*
+- **Giant Rat** — small, fast, low HP/damage. Swarmer.
+- **Wolf** — medium, pack hunter. Entering aggro range pulses a wake-up call to nearby wolves.
+- **Bear** — high HP, high damage, slow. Flees at 20% HP — do not corner one.
+- **Goblin** — humanoid, cowardly (flees at 15% HP), calls for help when aggroed.
+
+**World architecture — open world decision:**
+Kaligo is open world. All outdoor areas exist in one Unity scene (`World_Kaligo.unity`). No loading screens between village, meadow, and forest. When Act II's server arrives, it applies spatial partitioning to the same world geometry — zero client changes needed.
+
+- `AreaDefinition` ScriptableObject — named region data: safe-zone flag, fog, ambient light, audio, recommended level. One asset per outdoor area.
+- `AreaTrigger` — invisible BoxCollider volume. When the player walks in, smoothly transitions fog/audio and shows the area name. No scene load.
+- `AtmosphereManager` — DontDestroyOnLoad singleton. Lerps fog density/color and ambient light; crossfades audio between areas.
+- `AreaNameBanner` — Elden-Ring-style location title fades in/out on area entry.
+- `PlayerSpawnPoint` — named respawn anchor. Default is outside the inn in Millhaven.
+- `SafeZone` — trigger collider; static bool checked by `AggressiveMobBrain` before entering Chase.
+- `ZonePortal` + `ZoneTransitionManager` — preserved for **dungeon instances** (separate scenes). Not used for open-world outdoor areas.
+
+**One scene (`World_Kaligo.unity`), built by editor tool:**
+- **Millhaven (village)** — six buildings, well, fountain, fence ring, lantern posts. Safe zone. Center of the world.
+- **Meadowfield (south)** — open grassland, scattered trees and boulders. Deer, Sheep, Chicken spawners.
+- **Darkwood Forest (north)** — dense dark canopy, three ancient ruin clusters. Rats, Wolves, Goblins, Bear.
+- **Tree corridors** — natural-looking treelines between areas; no invisible walls.
+- **AreaTrigger volumes** — large boxes over each area. Walking through a treeline triggers a fog/audio shift.
+
+**Editor tools:**
+- **Kaligo → World → Create Area Definitions** — generates the 3 AreaDefinition assets.
+- **Kaligo → World → Create All Mob Definitions** — generates the 7 MobDefinition assets.
+- **Kaligo → World → Build Open World Scene** — builds `World_Kaligo.unity` in one click.
+
+**Step-by-step to get into the game:**
+1. In Unity: **Kaligo → World → Create Area Definitions**
+2. **Kaligo → World → Create All Mob Definitions**
+3. **Kaligo → World → Build Open World Scene**
+4. Add `World_Kaligo` to **File → Build Settings**
+5. Open `World_Kaligo.unity`, enter Play mode. Walk north for danger, south for peace.
+
+**Remaining tasks (in progress):**
+
+- **Fix combat feel.** Player attack animations and hitbox timing need calibration against open-world mob AI. Hits should feel impactful — mobs must visibly react, stagger, and die with readable telegraphing. Review `HitboxController` enable/disable timing relative to each `SkillStep`'s `animatorTrigger`, and verify `AggressiveMobBrain`'s attack window matches its animation.
+- **Assign mob loot tables.** Each `MobDefinition` asset (`Assets/Characters/Mobs/Data/`) needs a `LootTable` assigned. Passive animals drop crafting materials; aggressive mobs drop gear and gold scaled to difficulty. Wire `LootDrop` through `MobBrain.OnDeath` so loot spawns reliably in the open world.
+- **Fix looting system.** Verify the full loot flow end-to-end: mob dies → `LootDrop` creates `LootContainer` at correct world position → `LootPickup` shows interact prompt → `LootWindowUI` opens → items transfer to inventory. Fix any breakages from the scene rebuild (component wiring, UI canvas layering, world-space positioning).
+
+**Exit criterion:** You can walk from the village into the meadow, watch deer scatter, continue into the dark forest, get chased by wolves, kill one, and loot it. The world feels alive and rewarding. A stranger who boots the game immediately understands where they are, what threatens them, and what they stand to gain.
+
+**Estimated time:** 2–3 weeks (world building + creature tuning + loot pass).
+
+---
+
+## Phase 8 — NPCs, Dialogue, and a Quest
 
 **Goal:** A reason to be in the world beyond combat.
 
@@ -186,7 +262,7 @@
 
 ---
 
-## Phase 8 — Persistence
+## Phase 9 — Persistence
 
 **Goal:** Save and load. The world remembers.
 
@@ -209,7 +285,7 @@
 
 ---
 
-## Phase 9 — Vertical Slice
+## Phase 10 — Vertical Slice
 
 **Goal:** One polished zone where every Act I system works together.
 
@@ -237,7 +313,7 @@
 
 > Heads-up: every phase from here on is harder than every phase before it combined. Multiplayer programming is its own discipline. Consider working through Glenn Fiedler's *Gaffer on Games* articles (the canonical free starting point) and the **Mirror** or **FishNet** documentation start-to-finish before Phase 10.
 
-## Phase 10 — Two Players, Same Map
+## Phase 11 — Two Players, Same Map
 
 **Goal:** A second player can connect over LAN and run around with you.
 
@@ -262,7 +338,7 @@
 
 ---
 
-## Phase 11 — Authoritative Server & Combat Sync
+## Phase 12 — Authoritative Server & Combat Sync
 
 **Goal:** A dedicated server is the source of truth. Combat is synced and cheat-resistant.
 
@@ -282,7 +358,7 @@
 
 ---
 
-## Phase 12 — Persistence at Scale
+## Phase 13 — Persistence at Scale
 
 **Goal:** A real persistent server you can leave running.
 
@@ -304,7 +380,7 @@
 
 ---
 
-## Phase 13 — The MMO Layer
+## Phase 14 — The MMO Layer
 
 **Goal:** It feels like an MMO.
 
@@ -385,6 +461,13 @@ Resources worth bookmarking now and revisiting at the right phase:
     - [x] 6A — `ItemRarity` enum, `EquipmentSlot` enum, `ItemData` ScriptableObject (id, name, description, icon, modelPrefab, slot, rarity, stat bonuses, stackable)
     - [x] 6B — `ItemRegistry` ScriptableObject (lookup by itemId); Bootstrap registers singleton at startup
     - [x] 6C — `LootTable` ScriptableObject (weighted entries, rollCount, dropChance); `LootDrop` component (subscribes to HealthSystem.OnDeath, rolls table, spawns pickups); `LootPickup` (trigger collider, floating label, rarity colour, `+Item` float text on pickup, calls Services.Inventory.Add)
+- [ ] **Phase 7 — World & Creatures** ← *current*
+    - [x] 7A — Mob architecture: `MobDefinition`, `MobBrain` (abstract), `PassiveMobBrain`, `AggressiveMobBrain`, `MobFactory`, `MobSpawner`
+    - [x] 7B — Open world architecture: `AreaDefinition`, `AreaTrigger`, `AtmosphereManager`, `AreaNameBanner`, `PlayerSpawnPoint`, `SafeZone`
+    - [x] 7C — Dungeon architecture (preserved): `ZonePortal`, `ZoneTransitionManager` (for instanced content)
+    - [x] 7D — Editor tools: `AreaDataCreator`, `MobDataCreator`, `OpenWorldSceneBuilder`
+    - [ ] 7E — Run editor tools in Unity to generate the 7 mob assets, 3 area assets, and `World_Kaligo.unity`
+    - [ ] 7F — Populate and tune: walk all areas, adjust mob placement, detection ranges, spawn counts
     - [x] 6D — `EquipmentManager` component on player (subscribes to Inventory.OnChanged; sums HP/mana/damage bonuses; manages Weapon + Chest + optional sockets — instantiates item modelPrefab in socket on equip, destroys on unequip)
     - [x] 6E — `PlayerStats` updated: `RefreshStats()` public method; `ApplyStatsForLevel` layers EquipmentManager bonuses on top of level scaling
     - [x] 6F — Inventory UI (press I): bag grid (6×5), equipment panel (8 slots with correct positions), drag-and-drop equip, double-click equip/unequip, right-click unequip, hover tooltip, stat preview panel

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3d618bbc5496de448453329d6664f70, type: 3}
+  m_Name: Zone_Meadowfield
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.World.ZoneDefinition
+  zoneName: Meadowfield
+  sceneName: Zone_Meadowfield
+  type: 1
+  isSafeZone: 0
+  fogDensity: 0.004
+  fogColor: {r: 0.65, g: 0.72, b: 0.6, a: 1}
+  ambientLight: {r: 0.4, g: 0.45, b: 0.35, a: 1}
+  ambientClip: {fileID: 0}
+  musicClip: {fileID: 0}
+  ambientVolume: 0.45
+  musicVolume: 0.4
+  recommendedLevelMin: 1
+  recommendedLevelMax: 5

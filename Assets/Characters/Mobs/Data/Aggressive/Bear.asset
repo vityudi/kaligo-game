@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23cff4a24ec9cbe46acd3039e73dfe38, type: 3}
+  m_Name: Bear
+  m_EditorClassIdentifier: Assembly-CSharp::Kaligo.Mobs.MobDefinition
+  mobId: bear
+  displayName: Bear
+  type: 1
+  maxHealth: 200
+  moveSpeed: 3.5
+  turnSpeed: 250
+  wanderRadius: 8
+  wanderDuration: 5
+  wanderPauseDuration: 2
+  fleeDetectionRange: 8
+  fleeSpeedMultiplier: 1.8
+  fleeUntilDistance: 16
+  detectionRange: 12
+  attackRange: 2.5
+  damage: 35
+  attackCooldown: 3
+  attackDuration: 3
+  damageAtNormalized: 0.5
+  fleeAtHpFraction: 0.2
+  alertsNearby: 0
+  alertRadius: 15
+  xpReward: 80
+  lootTable: {fileID: 0}
+  placeholderColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
+  placeholderHeight: 2.2
+  placeholderRadius: 0.6
