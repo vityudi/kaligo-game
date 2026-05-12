@@ -34,7 +34,8 @@ MonoBehaviour:
   alertsNearby: 1
   alertRadius: 12
   xpReward: 30
-  lootTable: {fileID: 0}
-  placeholderColor: {r: 0.2, g: 0.45, b: 0.2, a: 1}
-  placeholderHeight: 1.2
-  placeholderRadius: 0.28
+  lootTable: {fileID: 11400000, guid: 045376b8ac0841118d531ee178c6072d, type: 3}
+  prefabOverride: {fileID: 5557534270050759983, guid: f0440cef7e884b6468136bca543273ca, type: 3}
+  placeholderColor: {r: 0.3, g: 0.5, b: 0.2, a: 1}
+  placeholderHeight: 1.6
+  placeholderRadius: 0.3

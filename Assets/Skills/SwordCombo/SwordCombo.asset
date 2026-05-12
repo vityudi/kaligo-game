@@ -19,7 +19,7 @@ MonoBehaviour:
     next strike.
   staminaCost: 0
   manaCost: 0
-  movementMultiplier: 0.35
+  movementMultiplier: 1
   cancelLockDuration: 0.25
   lockRotation: 1
   steps:

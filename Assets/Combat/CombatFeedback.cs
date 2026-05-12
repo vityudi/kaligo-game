@@ -5,32 +5,24 @@ using UnityEngine;
 namespace Kaligo.Combat
 {
     /// <summary>
-    /// Subscribes to HitboxController.OnHitLanded and freezes Time.timeScale briefly on
-    /// each confirmed hit (hit-stop). Screen shake is intentionally off — the CinemachineImpulseSource
-    /// is kept so it can be re-enabled from the Inspector (set shakeForce > 0) if desired.
+    /// Subscribes to HitboxController.OnHitLanded and applies hit-stop + screen shake
+    /// on every confirmed hit. Place on the same GameObject as CinemachineImpulseSource.
     /// </summary>
     [RequireComponent(typeof(CinemachineImpulseSource))]
     public class CombatFeedback : MonoBehaviour
     {
         [Header("Hit-Stop")]
-        [Tooltip("Seconds the game freezes on a light hit (~0.06 = 3-4 frames at 60 fps).")]
-        [SerializeField] private float lightHitStopDuration = 0.06f;
+        [SerializeField] private float lightHitStopDuration = 0.05f;
+        [SerializeField] private float heavyHitStopDuration = 0.12f;
 
-        [Tooltip("Seconds the game freezes on a heavy hit.")]
-        [SerializeField] private float heavyHitStopDuration = 0.14f;
-
-        [Header("Screen Shake (0 = off)")]
-        [Tooltip("Impulse force on a light hit. Keep at 0 unless you want subtle shake.")]
-        [SerializeField] private float lightShakeForce = 0f;
-
-        [Tooltip("Impulse force on a heavy hit. Keep at 0 unless you want subtle shake.")]
-        [SerializeField] private float heavyShakeForce = 0.1f;
+        [Header("Screen Shake")]
+        [SerializeField] private float lightShakeForce = 0.08f;
+        [SerializeField] private float heavyShakeForce = 0.22f;
 
         private CinemachineImpulseSource impulse;
         private Coroutine hitStopRoutine;
 
         private void Awake() => impulse = GetComponent<CinemachineImpulseSource>();
-
         private void OnEnable()  => HitboxController.OnHitLanded += HandleHit;
         private void OnDisable() => HitboxController.OnHitLanded -= HandleHit;
 
@@ -41,11 +33,11 @@ namespace Kaligo.Combat
                 StopCoroutine(hitStopRoutine);
                 Time.timeScale = 1f;
             }
-
-            hitStopRoutine = StartCoroutine(HitStop(isHeavy ? heavyHitStopDuration : lightHitStopDuration));
+            hitStopRoutine = StartCoroutine(
+                HitStop(isHeavy ? heavyHitStopDuration : lightHitStopDuration));
 
             float force = isHeavy ? heavyShakeForce : lightShakeForce;
-            if (force > 0f)
+            if (force > 0f && impulse != null)
                 impulse.GenerateImpulseAt(worldPos, Vector3.up * force);
         }
 

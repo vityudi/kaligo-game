@@ -18,7 +18,7 @@ MonoBehaviour:
   description: 
   staminaCost: 20
   manaCost: 0
-  movementMultiplier: 0.2
+  movementMultiplier: 0.5
   cancelLockDuration: 0.5
   lockRotation: 1
   steps:

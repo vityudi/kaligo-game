@@ -8,40 +8,30 @@ namespace Kaligo.Mobs
 {
     /// <summary>
     /// AI for hostile creatures: Rat, Wolf, Bear, Goblin.
-    ///
-    /// State machine:
-    ///   Idle ──(player in range)──► Chase ──(in attack range)──► Attacking ──► Chase
-    ///      └────────────────────────────────────────── Dead
-    ///   Chase ──(low HP + fleeAtHpFraction > 0)──► Fleeing ──(safe)──► Idle
-    ///
-    /// Pack alerting (wolves): entering Chase sends a pulse to nearby same-species
-    /// <see cref="AggressiveMobBrain"/>s, forcing them to Chase too.
+    /// State machine: Idle / Roam / Chase / Attacking / Fleeing / Dead
+    /// Pack alerting: entering Chase pulses nearby same-species brains.
     /// </summary>
     public class AggressiveMobBrain : MobBrain
     {
-        // ── State ─────────────────────────────────────────────────────────────
-
-        private enum State { Idle, Chase, Attacking, Fleeing }
+        private enum State { Idle, Roam, Chase, Attacking, Fleeing }
         private State state = State.Idle;
 
-        // ── Cached references ─────────────────────────────────────────────────
-
-        private Transform      player;
-        private SkillExecutor  playerExecutor;
-        private HealthSystem   playerHealth;
-
-        // ── Timers / flags ────────────────────────────────────────────────────
+        private Transform     player;
+        private SkillExecutor playerExecutor;
+        private HealthSystem  playerHealth;
 
         private float cooldownTimer;
         private bool  attackInProgress;
         private bool  alertSent;
 
-        // ── Lifecycle ─────────────────────────────────────────────────────────
+        private Vector3 spawnPoint;
+        private Vector3 roamTarget;
+        private float   roamTimer;
+        private const float RoamRadius = 5f;
 
         protected override void Awake()
         {
             base.Awake();
-
             var playerGO = GameObject.FindWithTag("Player");
             if (playerGO != null)
             {
@@ -51,11 +41,16 @@ namespace Kaligo.Mobs
             }
         }
 
-        // ── AI tick ───────────────────────────────────────────────────────────
+        private void Start()
+        {
+            spawnPoint = transform.position;
+            PickNewRoamTarget();
+            roamTimer = Random.Range(3f, 6f);
+        }
 
         protected override void Think()
         {
-            if (player == null) return;
+            if (player == null || definition == null) return;
 
             cooldownTimer -= Time.deltaTime;
             float dist = DistanceTo(player.position);
@@ -63,40 +58,50 @@ namespace Kaligo.Mobs
             switch (state)
             {
                 case State.Idle:
-                    // Never aggro while the player is in a safe zone (village, etc.)
+                    AnimSetFloat(HashSpeed, 0f);
                     if (dist <= definition.detectionRange && !SafeZone.PlayerIsInSafeZone)
-                        EnterChase();
-                    break;
-
-                case State.Chase:
-                    // Check low-HP flee
-                    if (ShouldFlee())
                     {
-                        EnterFlee();
+                        EnterChase();
                         break;
                     }
+                    roamTimer -= Time.deltaTime;
+                    if (roamTimer <= 0f) EnterRoam();
+                    break;
 
-                    if (dist > definition.detectionRange + 3f) // leash — give up if player runs far
+                case State.Roam:
+                    if (dist <= definition.detectionRange && !SafeZone.PlayerIsInSafeZone)
+                    {
+                        EnterChase();
+                        break;
+                    }
+                    float roamDist = new UnityEngine.Vector2(
+                        transform.position.x - roamTarget.x,
+                        transform.position.z - roamTarget.z).magnitude;
+                    if (roamDist < 0.6f)
                     {
                         EnterIdle();
                         break;
                     }
+                    MoveToward(roamTarget, definition.moveSpeed * 0.5f);
+                    AnimSetFloat(HashSpeed, 0.4f);
+                    break;
 
+                case State.Chase:
+                    if (ShouldFlee()) { EnterFlee(); break; }
+                    if (dist > definition.detectionRange + 4f) { EnterIdle(); break; }
                     if (dist <= definition.attackRange && cooldownTimer <= 0f && !attackInProgress)
                     {
                         StartCoroutine(AttackRoutine());
                         break;
                     }
-
                     if (!attackInProgress)
                     {
                         MoveToward(player.position, definition.moveSpeed);
-                        AnimSetFloat(HashSpeed, 0.5f);
+                        AnimSetFloat(HashSpeed, 1f);
                     }
                     break;
 
                 case State.Attacking:
-                    // Face player while winding up
                     if (!attackInProgress) EnterChase();
                     else FaceTarget(player.position);
                     break;
@@ -113,21 +118,24 @@ namespace Kaligo.Mobs
             }
         }
 
-        // ── State transitions ─────────────────────────────────────────────────
-
         private void EnterIdle()
         {
-            state = State.Idle;
+            state     = State.Idle;
             alertSent = false;
             AnimSetFloat(HashSpeed, 0f);
+            roamTimer = Random.Range(2f, 5f);
+        }
+
+        private void EnterRoam()
+        {
+            state = State.Roam;
+            PickNewRoamTarget();
         }
 
         private void EnterChase()
         {
             state = State.Chase;
-            AnimSetFloat(HashSpeed, 0.5f);
-
-            // Pack alerting — wolves wake up nearby allies
+            AnimSetFloat(HashSpeed, 1f);
             if (!alertSent && definition != null && definition.alertsNearby)
             {
                 alertSent = true;
@@ -141,79 +149,62 @@ namespace Kaligo.Mobs
             AnimSetFloat(HashSpeed, 1f);
         }
 
-        // ── Attack ────────────────────────────────────────────────────────────
+        private void PickNewRoamTarget()
+        {
+            Vector2 circle = Random.insideUnitCircle * RoamRadius;
+            roamTarget = spawnPoint + new Vector3(circle.x, 0f, circle.y);
+        }
 
         private IEnumerator AttackRoutine()
         {
             state            = State.Attacking;
             attackInProgress = true;
+            AnimSetFloat(HashSpeed, 0f);
             AnimTrigger(HashAttack);
 
-            // Telegraph: wait for the "strike frame" before dealing damage
             float telegraphTime = definition.attackDuration * definition.damageAtNormalized;
             yield return new WaitForSeconds(telegraphTime);
 
-            // Damage check at strike frame
             if (!IsDead)
             {
-                float   dist       = DistanceTo(player.position);
-                bool    inRange    = dist <= definition.attackRange + 0.5f;
-                bool    invincible = playerExecutor != null && playerExecutor.IsInvincible;
-
+                float dist      = DistanceTo(player.position);
+                bool  inRange   = dist <= definition.attackRange + 0.6f;
+                bool  invincible = playerExecutor != null && playerExecutor.IsInvincible;
                 if (inRange && !invincible && playerHealth != null)
                     playerHealth.TakeDamage(definition.damage);
             }
 
-            // Wait for the rest of the swing animation
             float recoveryTime = definition.attackDuration * (1f - definition.damageAtNormalized);
             yield return new WaitForSeconds(recoveryTime);
 
             cooldownTimer    = definition.attackCooldown;
             attackInProgress = false;
-
-            if (!IsDead)
-                EnterChase();
+            if (!IsDead) EnterChase();
         }
 
-        // ── Pack alerting ─────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Pulse to nearby same-species AggressiveMobBrains.
-        /// Called once the first time this mob enters Chase.
-        /// </summary>
         private void AlertNearby()
         {
-            Collider[] hits = Physics.OverlapSphere(
-                transform.position, definition.alertRadius);
-
+            Collider[] hits = Physics.OverlapSphere(transform.position, definition.alertRadius);
             foreach (var col in hits)
             {
                 if (col.gameObject == gameObject) continue;
-                var other = col.GetComponent<AggressiveMobBrain>();
+                var other = col.GetComponent<AggressiveMobBrain>()
+                         ?? col.GetComponentInParent<AggressiveMobBrain>();
                 if (other == null || other.IsDead) continue;
-
-                // Only alert the same species (same definition asset reference)
                 if (other.definition != definition) continue;
-
                 other.ForceChase();
             }
         }
 
-        /// <summary>
-        /// Force this mob into Chase immediately (called by pack-mates via AlertNearby).
-        /// </summary>
         public void ForceChase()
         {
             if (IsDead || state == State.Attacking) return;
             EnterChase();
         }
 
-        // ── Overrides ─────────────────────────────────────────────────────────
-
         protected override void OnHit(float current, float max)
         {
-            // Getting hit wakes an idle mob
-            if (state == State.Idle)
+            if (state == State.Idle || state == State.Roam)
                 EnterChase();
         }
 
@@ -221,38 +212,33 @@ namespace Kaligo.Mobs
         {
             StopAllCoroutines();
             attackInProgress = false;
-            AnimSetFloat(HashSpeed, 0f);
+            AnimSetFloat(HashSpeed, 0f, 0f);
         }
-
-        // ── Helpers ───────────────────────────────────────────────────────────
 
         private bool ShouldFlee()
         {
-            if (definition.fleeAtHpFraction <= 0f) return false;
-            return health.CurrentHealth / definition.maxHealth <= definition.fleeAtHpFraction;
+            if (definition == null || definition.fleeAtHpFraction <= 0f) return false;
+            if (health == null) return false;
+            float maxHp = health.MaxHealth;
+            return maxHp > 0f && health.CurrentHealth / maxHp <= definition.fleeAtHpFraction;
         }
-
-        // ── Debug ─────────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
             if (definition == null) return;
-
-            // Detection range
             Gizmos.color = new Color(1f, 0f, 0f, 0.15f);
             Gizmos.DrawSphere(transform.position, definition.detectionRange);
-
-            // Attack range
             Gizmos.color = new Color(1f, 0.3f, 0f, 0.3f);
             Gizmos.DrawSphere(transform.position, definition.attackRange);
-
-            // Alert radius (wolves)
             if (definition.alertsNearby)
             {
                 Gizmos.color = new Color(1f, 0.8f, 0f, 0.1f);
                 Gizmos.DrawSphere(transform.position, definition.alertRadius);
             }
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawLine(transform.position, roamTarget);
+            Gizmos.DrawWireSphere(roamTarget, 0.3f);
         }
 #endif
     }

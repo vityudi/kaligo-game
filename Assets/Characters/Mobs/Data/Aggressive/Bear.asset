@@ -35,6 +35,7 @@ MonoBehaviour:
   alertRadius: 15
   xpReward: 80
   lootTable: {fileID: 0}
+  prefabOverride: {fileID: 5378596774253579656, guid: 344ce0d5626e1b74496b623acf667f6d, type: 3}
   placeholderColor: {r: 0.35, g: 0.22, b: 0.12, a: 1}
   placeholderHeight: 2.2
   placeholderRadius: 0.6

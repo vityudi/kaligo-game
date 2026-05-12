@@ -90,13 +90,19 @@ namespace Kaligo.Skills
                 return true;
             }
 
+            // Same skill re-pressed outside the combo window: ignore rather than restarting.
+            // Without this guard the cancel-lock check below would restart the combo on any
+            // early LMB press (>0.25 s in), making it appear as if only 1 combo step exists.
+            if (currentSkill == skill && IsExecuting)
+                return false;
+
             if (!IsExecuting)
             {
                 executionRoutine = StartCoroutine(ExecuteSkill(skill));
                 return true;
             }
 
-            // Interrupt current skill once its cancel-lock window has passed
+            // Interrupt a DIFFERENT skill once its cancel-lock window has passed
             if (Time.time - skillStartTime >= currentSkill.cancelLockDuration)
             {
                 ForceDeactivate(currentSkill);

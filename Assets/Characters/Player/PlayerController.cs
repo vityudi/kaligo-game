@@ -63,6 +63,7 @@ namespace Kaligo
 
         private static readonly int VelocityXHash = Animator.StringToHash("VelocityX");
         private static readonly int VelocityZHash = Animator.StringToHash("VelocityZ");
+        private static readonly int SpeedHash      = Animator.StringToHash("Speed");
 
         private Kaligo.Skills.SkillExecutor skillExecutor;
         private Kaligo.Combat.Targeting     targeting;
@@ -156,6 +157,8 @@ namespace Kaligo
             float localZ = Vector3.Dot(horizontalVelocity, transform.forward) / runSpeed;
             animator.SetFloat(VelocityXHash, localX);
             animator.SetFloat(VelocityZHash, localZ);
+            // 1D speed scalar used by the locomotion blend tree (0=idle, 1=full run)
+            animator.SetFloat(SpeedHash, horizontalVelocity.magnitude / runSpeed);
         }
 
         // ─── Body orientation fix ─────────────────────────────────────────────

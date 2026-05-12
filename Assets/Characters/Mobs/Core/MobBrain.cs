@@ -7,16 +7,8 @@ namespace Kaligo.Mobs
 {
     /// <summary>
     /// Abstract base for all mob AI.
-    ///
-    /// Responsibilities:
-    ///   • Gravity + grounding
-    ///   • Knockback impulse + decay
-    ///   • Health wiring (hit react / death)
-    ///   • XP grant on death
-    ///   • Corpse despawn
-    ///
-    /// Derived classes implement <see cref="Think"/> for their state machine.
-    /// The mob does NOT need an Animator — all animator calls are null-guarded.
+    /// Handles: gravity, knockback, health wiring, hit-flash, XP grant, corpse despawn.
+    /// Derived classes implement Think() for their state machine.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(HealthSystem))]
@@ -25,32 +17,31 @@ namespace Kaligo.Mobs
         [Header("Mob Data")]
         [SerializeField] protected MobDefinition definition;
 
-        // ── References ────────────────────────────────────────────────────────
         protected CharacterController controller;
-        protected Animator            animator;   // may be null
+        protected Animator            animator;
         protected HealthSystem        health;
 
-        // ── State ─────────────────────────────────────────────────────────────
         public bool IsDead { get; private set; }
 
-        // ── Physics ───────────────────────────────────────────────────────────
         private float   verticalVelocity;
         private Vector3 knockbackVelocity;
-        private const float KnockbackDecay = 12f;
-        private const float Gravity        = -20f;
+        private const float KnockbackDecay = 10f;
+        private const float Gravity        = -22f;
 
-        // ── Animator hashes (guarded — mobs without animators just skip) ──────
+        private Renderer[] _renderers;
+        private Color[]    _originalColors;
+        private Coroutine  _flashRoutine;
+        private static readonly Color FlashColor = new Color(1f, 0.25f, 0.25f, 1f);
+
         protected static readonly int HashSpeed  = Animator.StringToHash("Speed");
         protected static readonly int HashIsDead = Animator.StringToHash("IsDead");
         protected static readonly int HashIsHit  = Animator.StringToHash("IsHit");
         protected static readonly int HashAttack = Animator.StringToHash("Attack");
 
-        // ── Lifecycle ─────────────────────────────────────────────────────────
-
         protected virtual void Awake()
         {
             controller = GetComponent<CharacterController>();
-            animator   = GetComponent<Animator>(); // optional
+            animator   = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
             health     = GetComponent<HealthSystem>();
 
             if (definition != null)
@@ -58,6 +49,22 @@ namespace Kaligo.Mobs
 
             health.OnDeath         += HandleDeath;
             health.OnHealthChanged += HandleHit;
+
+            _renderers     = GetComponentsInChildren<Renderer>();
+            _originalColors = new Color[_renderers.Length];
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                var mat = _renderers[i].sharedMaterial;
+                _originalColors[i] = (mat != null && mat.HasProperty("_BaseColor"))
+                    ? mat.GetColor("_BaseColor") : Color.white;
+            }
+        }
+
+        public void Initialize(MobDefinition def)
+        {
+            definition = def;
+            if (health != null && def != null)
+                health.SetMaxHealth(def.maxHealth);
         }
 
         protected virtual void Update()
@@ -68,13 +75,7 @@ namespace Kaligo.Mobs
             Think();
         }
 
-        /// <summary>
-        /// Implement the AI state machine here in derived classes.
-        /// Called every frame while alive.
-        /// </summary>
         protected abstract void Think();
-
-        // ── Movement helpers ──────────────────────────────────────────────────
 
         protected void MoveToward(Vector3 target, float speed)
         {
@@ -87,29 +88,24 @@ namespace Kaligo.Mobs
         protected void MoveAwayFrom(Vector3 threat, float speed)
         {
             Vector3 dir = (transform.position - threat).WithY(0f);
-            if (dir.sqrMagnitude < 0.01f)
-                dir = transform.forward; // fallback: keep going
+            if (dir.sqrMagnitude < 0.01f) dir = transform.forward;
             controller.Move(dir.normalized * speed * Time.deltaTime);
             FaceDirection(dir);
         }
 
         protected void FaceTarget(Vector3 target)
         {
-            Vector3 dir = (target - transform.position).WithY(0f);
-            FaceDirection(dir);
+            FaceDirection((target - transform.position).WithY(0f));
         }
 
         private void FaceDirection(Vector3 dir)
         {
             if (dir.sqrMagnitude < 0.01f) return;
-            float ts = (definition != null ? definition.turnSpeed : 360f);
+            float ts = definition != null ? definition.turnSpeed : 360f;
             transform.rotation = Quaternion.RotateTowards(
-                transform.rotation,
-                Quaternion.LookRotation(dir),
-                ts * Time.deltaTime);
+                transform.rotation, Quaternion.LookRotation(dir), ts * Time.deltaTime);
         }
 
-        /// <summary>Apply an external force impulse (e.g. knockback from player hit).</summary>
         public void ApplyKnockback(Vector3 impulse)
         {
             if (IsDead) return;
@@ -130,41 +126,34 @@ namespace Kaligo.Mobs
                 verticalVelocity = -2f;
             else
                 verticalVelocity += Gravity * Time.deltaTime;
-
             controller.Move(Vector3.up * verticalVelocity * Time.deltaTime);
         }
 
-        // ── Animator helpers ──────────────────────────────────────────────────
-
-        protected void AnimSetFloat(int hash, float value, float damp = 0.1f)
+        protected void AnimSetFloat(int hash, float value, float damp = 0.05f)
         {
-            if (animator != null)
-                animator.SetFloat(hash, value, damp, Time.deltaTime);
+            if (animator != null) animator.SetFloat(hash, value, damp, Time.deltaTime);
         }
 
         protected void AnimSetBool(int hash, bool value)
         {
-            if (animator != null)
-                animator.SetBool(hash, value);
+            if (animator != null) animator.SetBool(hash, value);
         }
 
         protected void AnimTrigger(int hash)
         {
-            if (animator != null)
-                animator.SetTrigger(hash);
+            if (animator != null) animator.SetTrigger(hash);
         }
-
-        // ── Health callbacks ──────────────────────────────────────────────────
 
         protected virtual void HandleHit(float current, float max)
         {
             if (!IsDead && current > 0f)
+            {
                 AnimTrigger(HashIsHit);
-
+                TriggerHitFlash();
+            }
             OnHit(current, max);
         }
 
-        /// <summary>Override to react to damage in derived classes (e.g. trigger flee).</summary>
         protected virtual void OnHit(float current, float max) { }
 
         private void HandleDeath()
@@ -172,17 +161,14 @@ namespace Kaligo.Mobs
             IsDead = true;
             StopAllCoroutines();
             AnimSetBool(HashIsDead, true);
+            AnimSetFloat(HashSpeed, 0f, 0f);
             controller.enabled = false;
-
-            // Grant XP
             if (definition != null && definition.xpReward > 0)
                 GameServices.Progression?.GrantXP(definition.xpReward);
-
             OnDeath();
             StartCoroutine(DespawnAfter(8f));
         }
 
-        /// <summary>Override in derived class for death side effects (stop coroutines, etc.).</summary>
         protected virtual void OnDeath() { }
 
         private IEnumerator DespawnAfter(float delay)
@@ -191,14 +177,37 @@ namespace Kaligo.Mobs
             Destroy(gameObject);
         }
 
-        // ── Helpers ───────────────────────────────────────────────────────────
+        private void TriggerHitFlash()
+        {
+            if (_renderers == null || _renderers.Length == 0) return;
+            if (_flashRoutine != null) StopCoroutine(_flashRoutine);
+            _flashRoutine = StartCoroutine(HitFlashRoutine());
+        }
 
-        /// <summary>How far is this mob from a given position (XZ plane only)?</summary>
+        private IEnumerator HitFlashRoutine()
+        {
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                if (_renderers[i] == null) continue;
+                foreach (var mat in _renderers[i].materials)
+                    if (mat.HasProperty("_BaseColor"))
+                        mat.SetColor("_BaseColor", FlashColor);
+            }
+            yield return new WaitForSeconds(0.08f);
+            for (int i = 0; i < _renderers.Length; i++)
+            {
+                if (_renderers[i] == null) continue;
+                foreach (var mat in _renderers[i].materials)
+                    if (mat.HasProperty("_BaseColor"))
+                        mat.SetColor("_BaseColor", _originalColors[i]);
+            }
+            _flashRoutine = null;
+        }
+
         protected float DistanceTo(Vector3 pos) =>
             new Vector2(transform.position.x - pos.x, transform.position.z - pos.z).magnitude;
     }
 
-    /// <summary>Extension so we can write <c>v.WithY(0f)</c> instead of the verbose alternative.</summary>
     internal static class Vector3Extensions
     {
         public static Vector3 WithY(this Vector3 v, float y) => new Vector3(v.x, y, v.z);

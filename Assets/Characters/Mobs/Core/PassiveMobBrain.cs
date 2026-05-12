@@ -44,7 +44,7 @@ namespace Kaligo.Mobs
 
         protected override void Think()
         {
-            if (player == null) return;
+            if (player == null || definition == null) return;
 
             stateTimer -= Time.deltaTime;
             float distToPlayer = DistanceTo(player.position);

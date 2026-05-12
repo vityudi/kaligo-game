@@ -5,25 +5,23 @@ using UnityEngine;
 namespace Kaligo.Items
 {
     /// <summary>
-    /// Attach to any enemy or mob that should drop loot on death.
-    /// On death: rolls the LootTable, then adds a LootContainer component to
-    /// this GameObject so the player can loot the body with [F].
-    ///
-    /// Note: EnemyAI (legacy) handles its own loot container — we skip for those.
-    /// New MobBrain-based mobs use this component directly; MobFactory injects
-    /// the loot table from the MobDefinition.
+    /// Attach to any mob that should drop loot on death.
+    /// MobFactory calls SetLootTable() to inject the table without reflection.
+    /// On death, rolls the LootTable and adds a LootContainer so the player
+    /// can loot the body with [F].
     /// </summary>
     [RequireComponent(typeof(HealthSystem))]
     public class LootDrop : MonoBehaviour
     {
         [Header("Loot")]
-        [Tooltip("What this enemy can drop. Leave null for no drops.")]
         [SerializeField] private LootTable lootTable;
+
+        /// <summary>Called by MobFactory to inject the loot table — no reflection needed.</summary>
+        public void SetLootTable(LootTable table) => lootTable = table;
 
         private void Awake()
         {
-            // Legacy EnemyAI handles its own loot container — skip to avoid duplicates.
-            // New MobBrain mobs do NOT self-manage loot; this component handles it.
+            // Legacy EnemyAI manages its own loot — skip to avoid duplicates.
             if (GetComponent<EnemyAI>() != null) return;
             GetComponent<HealthSystem>().OnDeath += OnDeath;
         }
@@ -32,18 +30,13 @@ namespace Kaligo.Items
         {
             if (lootTable == null)
             {
-                Debug.LogWarning($"[LootDrop] {name}: lootTable is not assigned — no loot container created.");
+                Debug.LogWarning($"[LootDrop] {name}: lootTable not assigned — no loot created.");
                 return;
             }
 
             var drops = lootTable.Roll();
-            if (drops.Count == 0)
-            {
-                Debug.Log($"[LootDrop] {name}: loot roll returned nothing (dropChance or empty entries).");
-                return;
-            }
+            if (drops.Count == 0) return;
 
-            Debug.Log($"[LootDrop] {name}: creating LootContainer with {drops.Count} item(s).");
             var container = gameObject.AddComponent<LootContainer>();
             container.Initialize(drops);
         }

@@ -89,16 +89,21 @@ namespace Kaligo.Mobs
         public int       xpReward  = 25;
         public LootTable lootTable;
 
-        // ── Visual (placeholder) ──────────────────────────────────────────────
+        // ── Visual ────────────────────────────────────────────────────────────
+
+        [Header("Visual — Real Model")]
+        [Tooltip("When assigned, MobFactory instantiates this prefab as the visual instead of the placeholder capsule. " +
+                 "The prefab root should carry an Animator component pre-wired to its AnimatorController.")]
+        public GameObject prefabOverride;
 
         [Header("Placeholder Visual")]
-        [Tooltip("Tint applied to the capsule primitive until a real model is assigned.")]
+        [Tooltip("Tint applied to the capsule primitive when no prefabOverride is assigned.")]
         public Color placeholderColor  = Color.gray;
 
-        [Tooltip("Height of the capsule primitive in world units.")]
+        [Tooltip("Height of the capsule primitive in world units. Also drives the CharacterController height.")]
         public float placeholderHeight = 1.8f;
 
-        [Tooltip("Radius of the capsule primitive.")]
+        [Tooltip("Radius of the capsule primitive. Also drives the CharacterController radius.")]
         public float placeholderRadius = 0.35f;
     }
 }
